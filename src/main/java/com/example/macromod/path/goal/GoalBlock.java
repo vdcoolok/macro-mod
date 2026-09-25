@@ -35,6 +35,9 @@ public class GoalBlock implements Goal, ActionCosts {
         this(pos.getX(), pos.getY(), pos.getZ());
     }
 
+    public int getX() { return x; }
+    public int getY() { return y; }
+    public int getZ() { return z; }
     public double getExactX() { return exactX; }
     public double getExactY() { return exactY; }
     public double getExactZ() { return exactZ; }

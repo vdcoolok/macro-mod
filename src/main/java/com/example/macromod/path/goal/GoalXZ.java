@@ -10,6 +10,9 @@ public class GoalXZ implements Goal {
         this.z = z;
     }
 
+    public int getX() { return x; }
+    public int getZ() { return z; }
+
     @Override
     public boolean isInGoal(int x, int y, int z) {
         return this.x == x && this.z == z;

@@ -2,8 +2,13 @@ package com.example.macromod.path.behavior;
 
 import com.example.macromod.ForcedInputState;
 import com.example.macromod.NolookController;
-import com.example.macromod.path.calc.*;
+import com.example.macromod.path.calc.AStarPathFinder;
+import com.example.macromod.path.calc.CalculationContext;
+import com.example.macromod.path.calc.Path;
+import com.example.macromod.path.calc.PathExecutor;
 import com.example.macromod.path.goal.Goal;
+import com.example.macromod.path.goal.GoalBlock;
+import com.example.macromod.path.goal.GoalXZ;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
@@ -23,14 +28,19 @@ public class PathingBehavior {
     private static final long BLACKLIST_TTL_MS = 10_000;
     private static final long EDGE_BLACKLIST_TTL_MS = 8000;
 
+    private static final long RECALC_INTERVAL_MS = 5000;
+    private static final long EXPLORE_RECALC_INTERVAL_MS = 1500;
+    private static final double SWAP_MARGIN = 0.95;
+    private static final int EXPLORE_CHUNK_MARGIN = 2;
+
     private Goal currentGoal;
+    private Goal activeGoal;
     private PathExecutor executor;
     private CalculationContext context;
     private boolean calculating = false;
+    private boolean exploring = false;
 
     private long lastRecalc = 0;
-    private static final long RECALC_INTERVAL_MS = 5000;
-    private static final double SWAP_MARGIN = 0.95;
 
     private PathingBehavior() {}
 
@@ -72,8 +82,10 @@ public class PathingBehavior {
 
     public void setGoal(Goal goal) {
         this.currentGoal = goal;
+        this.activeGoal = goal;
         this.executor = null;
         this.calculating = false;
+        this.exploring = false;
         this.lastRecalc = System.currentTimeMillis();
         startCalculation();
     }
@@ -82,8 +94,10 @@ public class PathingBehavior {
         if (context != null) context.releaseAllInputs();
         NolookController.setMode(NolookController.Mode.NONE);
         currentGoal = null;
+        activeGoal = null;
         executor = null;
         calculating = false;
+        exploring = false;
     }
 
     public boolean isPathing() {
@@ -92,13 +106,13 @@ public class PathingBehavior {
 
     private void startCalculation() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || currentGoal == null) return;
+        if (mc.player == null || activeGoal == null) return;
         if (calculating) return;
 
         calculating = true;
         context = new CalculationContext();
 
-        final Goal goal = currentGoal;
+        final Goal goal = activeGoal;
         final BlockPos startPos = context.playerFeetBlock();
         if (startPos == null) { calculating = false; return; }
         final int sx = startPos.getX();
@@ -113,26 +127,26 @@ public class PathingBehavior {
 
             if (path == null || path.isFinished()) {
                 if (executor == null) {
-                    System.out.println("[MacroMod] No path found (" + dt + "ms)");
-                    currentGoal = null;
+                    System.out.println("[MacroMod] No path to ("
+                            + goalDescription(goal) + ") found (" + dt + "ms)");
+                    handleCalculationFailure();
                 }
                 calculating = false;
                 return;
             }
 
-            double newCost = path.getTotalCost();
             System.out.println("[MacroMod] Path found: " + path.size()
-                    + " movements, cost " + String.format("%.2f", newCost)
+                    + " movements, cost " + String.format("%.2f", path.getTotalCost())
                     + ", " + dt + "ms");
 
             if (executor == null) {
                 executor = new PathExecutor(path, goal);
             } else {
                 double currentRemaining = executor.getPath().getRemainingCost();
-                if (newCost < currentRemaining * SWAP_MARGIN) {
+                if (newCost(path) < currentRemaining * SWAP_MARGIN) {
                     System.out.println("[MacroMod] Swapping path: "
                         + String.format("%.2f", currentRemaining) + " → "
-                        + String.format("%.2f", newCost));
+                        + String.format("%.2f", newCost(path)));
                     executor = new PathExecutor(path, goal);
                 }
             }
@@ -142,19 +156,135 @@ public class PathingBehavior {
         calcThread.start();
     }
 
+    private static double newCost(Path path) {
+        return path.getTotalCost();
+    }
+
+    private void handleCalculationFailure() {
+        if (exploring) {
+            System.out.println("[MacroMod] Explore target unreachable, stopping pathing");
+            Goal goal = currentGoal;
+            stop();
+            currentGoal = goal;
+            return;
+        }
+
+        GoalXZ step = nextExploreStep();
+        if (step == null) {
+            System.out.println("[MacroMod] Goal is in unloaded chunks and no straight-line "
+                    + "step could be computed, stopping pathing");
+            Goal goal = currentGoal;
+            stop();
+            currentGoal = goal;
+            return;
+        }
+
+        System.out.println("[MacroMod] Goal area not cached, exploring toward ("
+                + step.getX() + ", " + step.getZ() + ")");
+        exploring = true;
+        activeGoal = step;
+        startCalculation();
+    }
+
+    private GoalXZ nextExploreStep() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || currentGoal == null) return null;
+
+        int tx = goalX(currentGoal);
+        int tz = goalZ(currentGoal);
+        if (tx == Integer.MIN_VALUE || tz == Integer.MIN_VALUE) return null;
+
+        BlockPos feet = context.playerFeetBlock();
+        if (feet == null) return null;
+
+        int dx = tx - feet.getX();
+        int dz = tz - feet.getZ();
+        int chebyshev = Math.max(Math.abs(dx), Math.abs(dz));
+        if (chebyshev == 0) return null;
+
+        int renderDistance = mc.options.getEffectiveRenderDistance();
+        int maxStepBlocks = Math.max(16, (renderDistance - EXPLORE_CHUNK_MARGIN) * 16);
+
+        double ux = dx / (double) chebyshev;
+        double uz = dz / (double) chebyshev;
+
+        int stepX = feet.getX() + (int) Math.round(ux * maxStepBlocks);
+        int stepZ = feet.getZ() + (int) Math.round(uz * maxStepBlocks);
+
+        if (stepX == feet.getX() && stepZ == feet.getZ()) return null;
+        return new GoalXZ(stepX, stepZ);
+    }
+
+    private boolean goalChunksCached() {
+        if (currentGoal == null) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return false;
+        int gx = goalX(currentGoal);
+        int gz = goalZ(currentGoal);
+        if (gx == Integer.MIN_VALUE || gz == Integer.MIN_VALUE) return false;
+        return mc.level.getChunkSource().getChunk(gx >> 4, gz >> 4, false) != null;
+    }
+
+    private static int goalX(Goal goal) {
+        if (goal instanceof GoalXZ g) return g.getX();
+        if (goal instanceof GoalBlock g) return g.getX();
+        return Integer.MIN_VALUE;
+    }
+
+    private static int goalZ(Goal goal) {
+        if (goal instanceof GoalXZ g) return g.getZ();
+        if (goal instanceof GoalBlock g) return g.getZ();
+        return Integer.MIN_VALUE;
+    }
+
+    private static String goalDescription(Goal goal) {
+        if (goal instanceof GoalXZ g) return "xz " + g.getX() + ", " + g.getZ();
+        if (goal instanceof GoalBlock g) return "block " + g.getX() + ", " + g.getY() + ", " + g.getZ();
+        return goal.getClass().getSimpleName();
+    }
+
     public void tick() {
         if (currentGoal == null) return;
 
         lockKeyboard();
 
         if (executor == null) {
-            if (!calculating) currentGoal = null;
+            if (!calculating) {
+                Goal goal = currentGoal;
+                stop();
+                currentGoal = goal;
+            }
+            return;
+        }
+
+        if (exploring && goalChunksCached()) {
+            System.out.println("[MacroMod] Goal chunks now cached, switching to real path");
+            if (context != null) context.releaseAllInputs();
+            executor = null;
+            exploring = false;
+            activeGoal = currentGoal;
+            startCalculation();
             return;
         }
 
         boolean done = executor.tick(context);
         if (done) {
             if (context != null) context.releaseAllInputs();
+            executor = null;
+
+            if (exploring) {
+                GoalXZ step = nextExploreStep();
+                if (step != null && !reached(step)) {
+                    activeGoal = step;
+                    startCalculation();
+                    return;
+                }
+                exploring = false;
+                activeGoal = currentGoal;
+                startCalculation();
+                return;
+            }
+
             stop();
             return;
         }
@@ -162,15 +292,24 @@ public class PathingBehavior {
         if (executor.needsRecalculation()) {
             if (context != null) context.releaseAllInputs();
             executor.clearRecalculation();
+            executor = null;
             startCalculation();
             return;
         }
 
         long now = System.currentTimeMillis();
-        if (!calculating && now - lastRecalc > RECALC_INTERVAL_MS) {
+        long interval = exploring ? EXPLORE_RECALC_INTERVAL_MS : RECALC_INTERVAL_MS;
+        if (!calculating && now - lastRecalc > interval) {
             lastRecalc = now;
             startCalculation();
         }
+    }
+
+    private boolean reached(GoalXZ step) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return true;
+        return mc.player.blockPosition().getX() == step.getX()
+                && mc.player.blockPosition().getZ() == step.getZ();
     }
 
     private static void lockKeyboard() {
@@ -190,6 +329,7 @@ public class PathingBehavior {
 
     public Goal getGoal() { return currentGoal; }
     public boolean isCalculating() { return calculating; }
+    public boolean isExploring() { return exploring; }
     public Path getCurrentPath() { return executor != null ? executor.getPath() : null; }
 
     private static long key(int x, int y, int z) {
