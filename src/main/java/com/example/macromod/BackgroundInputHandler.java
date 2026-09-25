@@ -1,6 +1,8 @@
 package com.example.macromod;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.BlockHitResult;
 
 public final class BackgroundInputHandler {
 
@@ -17,14 +19,30 @@ public final class BackgroundInputHandler {
         boolean wantBreak = MacroExecutor.isMouseHeld("left")
                 || ForcedInputState.isMouseForced(0);
 
-        if (wantBreak && client.screen != null) {
-            client.gameMode.continueAttack(true);
-            breaking = true;
-        } else if (breaking) {
-            if (!wantBreak) {
+        if (!wantBreak) {
+            if (breaking) {
                 client.gameMode.stopDestroyBlock();
+                breaking = false;
             }
-            breaking = wantBreak;
+            return;
+        }
+
+        if (client.gui != null && client.gui.screen() != null) {
+            keepBreaking(client);
+        }
+
+        breaking = true;
+    }
+
+    private static void keepBreaking(Minecraft client) {
+        if (!(client.hitResult instanceof BlockHitResult hit)) return;
+
+        BlockPos pos = hit.getBlockPos();
+
+        if (client.gameMode.isDestroying()) {
+            client.gameMode.continueDestroyBlock(pos, hit.getDirection());
+        } else {
+            client.gameMode.startDestroyBlock(pos, hit.getDirection());
         }
     }
 }

@@ -5,7 +5,7 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "KeyboardHandlerMixin",
-    "MouseHandlerMixin",
+    "KeyMappingMixin",
     "GameRendererMixin",
     "LocalPlayerMixin"
   ],

@@ -5,6 +5,7 @@ import com.example.macromod.path.cache.CachedChunk;
 import com.example.macromod.path.cache.CachedWorld;
 import com.example.macromod.path.cache.PathingBlockType;
 import com.example.macromod.path.render.RotationController;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 
 import net.minecraft.client.KeyMapping;

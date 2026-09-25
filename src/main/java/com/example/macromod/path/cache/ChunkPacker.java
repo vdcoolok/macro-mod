@@ -1,6 +1,7 @@
 package com.example.macromod.path.cache;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -23,7 +24,7 @@ public class ChunkPacker {
                     if (isSpecialBlock(state)) {
                         cached.setSpecialBlock(lx, y, lz, state.getBlock());
                     }
-                    cached.setBreakTicks(lx, y, lz, breakTicksFor(state));
+                    cached.setBreakTicks(lx, y, lz, breakTicksFor(state, level, pos));
                 }
             }
         }
@@ -52,7 +53,7 @@ public class ChunkPacker {
         }
     }
 
-    public static byte breakTicksFor(BlockState state) {
+    public static byte breakTicksFor(BlockState state, BlockGetter level, BlockPos pos) {
         if (state.isAir()) return 0;
         if (state.is(Blocks.BEDROCK)
                 || state.is(Blocks.BARRIER)
@@ -61,14 +62,13 @@ public class ChunkPacker {
                 || state.is(Blocks.CRYING_OBSIDIAN)
                 || state.is(Blocks.NETHERITE_BLOCK)
                 || state.is(Blocks.END_PORTAL_FRAME)
-                || state.is(Blocks.SPAWNER)
-                || state.is(Blocks.END_CHEST)) {
+                || state.is(Blocks.SPAWNER)) {
             return CachedChunk.UNBREAKABLE;
         }
 
         float hardness;
         try {
-            hardness = state.destroySpeed;
+            hardness = state.getDestroySpeed(level, pos);
         } catch (Exception e) {
             return CachedChunk.UNBREAKABLE;
         }
