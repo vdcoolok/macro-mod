@@ -121,36 +121,48 @@ public class PathingBehavior {
 
         Thread calcThread = new Thread(() -> {
             long t0 = System.currentTimeMillis();
-            AStarPathFinder finder = new AStarPathFinder(context, goal, sx, sy, sz);
-            Path path = finder.calculate();
-            long dt = System.currentTimeMillis() - t0;
+            try {
+                AStarPathFinder finder = new AStarPathFinder(context, goal, sx, sy, sz);
+                Path path = finder.calculate();
+                long dt = System.currentTimeMillis() - t0;
 
-            if (path == null || path.isFinished()) {
+                if (path == null || path.isFinished()) {
+                    calculating = false;
+
+                    if (path != null && goal.isInGoal(sx, sy, sz)) {
+                        System.out.println("[MacroMod] Already at " + goalDescription(goal));
+                        stop();
+                        return;
+                    }
+
+                    if (executor == null) {
+                        System.out.println("[MacroMod] No path to ("
+                                + goalDescription(goal) + ") found (" + dt + "ms)");
+                        handleCalculationFailure();
+                    }
+                    return;
+                }
+
+                System.out.println("[MacroMod] Path found: " + path.size()
+                        + " movements, cost " + String.format("%.2f", path.getTotalCost())
+                        + ", " + dt + "ms");
+
                 if (executor == null) {
-                    System.out.println("[MacroMod] No path to ("
-                            + goalDescription(goal) + ") found (" + dt + "ms)");
-                    handleCalculationFailure();
+                    executor = new PathExecutor(path, goal);
+                } else {
+                    double currentRemaining = executor.getPath().getRemainingCost();
+                    if (newCost(path) < currentRemaining * SWAP_MARGIN) {
+                        System.out.println("[MacroMod] Swapping path: "
+                            + String.format("%.2f", currentRemaining) + " → "
+                            + String.format("%.2f", newCost(path)));
+                        executor = new PathExecutor(path, goal);
+                    }
                 }
                 calculating = false;
-                return;
+            } catch (Throwable t) {
+                System.err.println("[MacroMod] Path calculation crashed: " + t);
+                calculating = false;
             }
-
-            System.out.println("[MacroMod] Path found: " + path.size()
-                    + " movements, cost " + String.format("%.2f", path.getTotalCost())
-                    + ", " + dt + "ms");
-
-            if (executor == null) {
-                executor = new PathExecutor(path, goal);
-            } else {
-                double currentRemaining = executor.getPath().getRemainingCost();
-                if (newCost(path) < currentRemaining * SWAP_MARGIN) {
-                    System.out.println("[MacroMod] Swapping path: "
-                        + String.format("%.2f", currentRemaining) + " → "
-                        + String.format("%.2f", newCost(path)));
-                    executor = new PathExecutor(path, goal);
-                }
-            }
-            calculating = false;
         }, "MacroMod-PathCalc");
         calcThread.setDaemon(true);
         calcThread.start();
@@ -163,9 +175,13 @@ public class PathingBehavior {
     private void handleCalculationFailure() {
         if (exploring) {
             System.out.println("[MacroMod] Explore target unreachable, stopping pathing");
-            Goal goal = currentGoal;
             stop();
-            currentGoal = goal;
+            return;
+        }
+
+        if (goalChunksCached()) {
+            System.out.println("[MacroMod] Goal is in loaded chunks but no path was found, stopping pathing");
+            stop();
             return;
         }
 
@@ -173,9 +189,7 @@ public class PathingBehavior {
         if (step == null) {
             System.out.println("[MacroMod] Goal is in unloaded chunks and no straight-line "
                     + "step could be computed, stopping pathing");
-            Goal goal = currentGoal;
             stop();
-            currentGoal = goal;
             return;
         }
 
@@ -250,11 +264,7 @@ public class PathingBehavior {
         lockKeyboard();
 
         if (executor == null) {
-            if (!calculating) {
-                Goal goal = currentGoal;
-                stop();
-                currentGoal = goal;
-            }
+            if (!calculating) startCalculation();
             return;
         }
 

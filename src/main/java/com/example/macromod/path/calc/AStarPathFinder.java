@@ -72,7 +72,7 @@ public class AStarPathFinder implements ActionCosts {
             current.closed = true;
             nodesExplored++;
 
-            double metric = current.estimatedCost + current.cost;
+            double metric = current.estimatedCost;
             if (metric < bestPartialMetric) {
                 bestPartialMetric = metric;
                 bestPartial = current;
