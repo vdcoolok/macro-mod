@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 public class GoalBlock implements Goal, ActionCosts {
 
     private static final double SQRT_2 = Math.sqrt(2);
+    private static final double SPRINT_ORTHOGONAL = 20.0 / 5.612;
 
     private final int x, y, z;
     private final double exactX, exactY, exactZ;
@@ -64,6 +65,6 @@ public class GoalBlock implements Goal, ActionCosts {
         double az = Math.abs(zDiff);
         double straight = Math.max(ax, az) - Math.min(ax, az);
         double diagonal = Math.min(ax, az) * SQRT_2;
-        return (diagonal + straight) * WALK_ONE_BLOCK_COST;
+        return (diagonal + straight) * SPRINT_ORTHOGONAL;
     }
 }

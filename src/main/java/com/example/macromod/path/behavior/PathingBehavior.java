@@ -1,10 +1,14 @@
 package com.example.macromod.path.behavior;
 
 import com.example.macromod.ForcedInputState;
+import com.example.macromod.NolookController;
 import com.example.macromod.path.calc.*;
 import com.example.macromod.path.goal.Goal;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 
 import java.util.Map;
@@ -76,6 +80,7 @@ public class PathingBehavior {
 
     public void stop() {
         if (context != null) context.releaseAllInputs();
+        NolookController.setMode(NolookController.Mode.NONE);
         currentGoal = null;
         executor = null;
         calculating = false;
@@ -140,6 +145,8 @@ public class PathingBehavior {
     public void tick() {
         if (currentGoal == null) return;
 
+        lockKeyboard();
+
         if (executor == null) {
             if (!calculating) currentGoal = null;
             return;
@@ -163,6 +170,21 @@ public class PathingBehavior {
         if (!calculating && now - lastRecalc > RECALC_INTERVAL_MS) {
             lastRecalc = now;
             startCalculation();
+        }
+    }
+
+    private static void lockKeyboard() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null) return;
+
+        for (Map.Entry<InputConstants.Key, Boolean> e : ForcedInputState.getForcedKeyStates().entrySet()) {
+            InputConstants.Key key = e.getKey();
+            if (key == null || !e.getValue()) continue;
+
+            if (!InputConstants.isKeyDown(mc.getWindow(), key.getValue())) {
+                KeyMapping.set(key, true);
+            }
         }
     }
 

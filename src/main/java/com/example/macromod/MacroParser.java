@@ -57,6 +57,14 @@ public class MacroParser {
         switch (cmd) {
             case "goto", "walk", "walkto", "pathfind", "go" ->
                 actions.add(parsePathfind(t.subList(1, t.size())));
+            case "nolookgoto", "nolookwalk", "nolookgo" -> {
+                double[] c = parseCoords(t.subList(1, t.size()));
+                actions.add(MacroAction.nolookGoto(c[0], c[1], c[2]));
+            }
+            case "nolookautogoto", "nolookautowalk", "nolocksnapgoto" -> {
+                double[] c = parseCoords(t.subList(1, t.size()));
+                actions.add(MacroAction.nolookAutoGoto(c[0], c[1], c[2]));
+            }
             case "gotohere", "walkhere", "pathhere" ->
                 actions.add(parsePathfindFromCurrent());
             case "tp", "teleport" ->

@@ -5,7 +5,7 @@
 
 **A powerful client-side macro system for Minecraft 26.2**
 
-*Hold keys, click mice, teleport with sub-millimeter precision, lock your view, chat, run commands, and loop it all — driven entirely from simple text files.*
+*Hold keys, click mice, teleport with sub-millimeter precision, lock your view, chat, run commands, and loop it all — driven entirely from simple text fil ues.*
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?style=for-the-badge&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Fabric-0.19.3-DBB69B?style=for-the-badge)](https://fabricmc.net/)
@@ -180,6 +180,8 @@ That's the entire grammar. Every directive below fits into that model.
 | `auto look "153.5 / 14.2"` | Snap-back **look lock** — snap back instantly if your view drifts |
 | `snap look "153.5 / 14.2"` | Alias for `auto look` |
 | `snap_look 153.5 14.2` | Legacy alias, still supported |
+| `nolookgoto "10 50 20"` | Pathfind to coordinates **without touching your camera** — walk anywhere while your view stays free. Others see you looking where you're looking |
+| `nolookautogoto "10 50 20"` | Same, but the server sees you looking at your active `auto look` direction for the whole walk — perfect for mining while repositioning |
 
 > **Yaw:** `0` = south, `90` = west, `180` = north, `-90`/`270` = east
 > **Pitch:** `-90` = straight up, `0` = horizon, `90` = straight down
@@ -424,6 +426,7 @@ Key and mouse states are injected via `KeyMapping.set(key, pressed)`, which flip
 - **Loops** are tracked with an explicit stack. Infinite loops (`count == -1`) reset the index to the loop start; finite loops decrement a counter.
 - **Binds** are registered the first time their `bind` action runs, and then persist independently of the action list until `/macro stop`.
 - **Snap locks** are stored as single references (`activeSnapGoto`, `activeSnapLook`). Only one of each can be active at a time — issuing a new one replaces the previous.
+- **Nolook pathing** decouples look from movement: during each tick the player rotation is the walking direction (so movement impulses follow the path), and right before the movement packet is sent the rotation swaps to your camera (`nolookgoto`) or your `auto look` lock (`nolookautogoto`), then swaps back. Your camera never snaps, and other players never see your head follow the path. While pathing, the keyboard is locked to the bot's inputs so stray key presses can't derail it.
 - If the macro action list reaches the end while any snap lock is active, the macro stays running (idling) so the locks remain armed. Otherwise it stops.
 
 ---

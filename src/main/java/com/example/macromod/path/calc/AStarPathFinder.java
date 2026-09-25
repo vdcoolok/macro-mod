@@ -2,26 +2,33 @@ package com.example.macromod.path.calc;
 
 import com.example.macromod.path.behavior.PathingBehavior;
 import com.example.macromod.path.goal.Goal;
-import com.example.macromod.path.movement.*;
+import com.example.macromod.path.movement.AscendMovement;
+import com.example.macromod.path.movement.BreakAndAscendMovement;
+import com.example.macromod.path.movement.BreakAndTraverseMovement;
+import com.example.macromod.path.movement.FallMovement;
+import com.example.macromod.path.movement.Movement;
+import com.example.macromod.path.movement.ParkourMovement;
+import com.example.macromod.path.movement.TraverseMovement;
 
 import net.minecraft.core.BlockPos;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 
-public class AStarPathFinder {
+public class AStarPathFinder implements ActionCosts {
 
-    private static final double[] COEFFICIENTS = {
-        1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 10.0
-    };
+    private static final int MAX_NODES = 250_000;
+    private static final long PRIMARY_TIMEOUT_MS = 4000;
+    private static final long FAILURE_TIMEOUT_MS = 10_000;
+    private static final double MIN_PARTIAL_DIST_SQ = 9.0;
 
     private final CalculationContext ctx;
     private final Goal goal;
     private final int startX, startY, startZ;
-
-    private static final int MAX_NODES = 200_000;
-    private static final long PRIMARY_TIMEOUT_MS = 3000;
-    private static final long FAILURE_TIMEOUT_MS = 8000;
-    private static final double MIN_PARTIAL_DIST_SQ = 9.0;
 
     public AStarPathFinder(CalculationContext ctx, Goal goal, int startX, int startY, int startZ) {
         this.ctx = ctx;
@@ -45,19 +52,17 @@ public class AStarPathFinder {
         openSet.add(start);
         allNodes.put(key(startX, startY, startZ), start);
 
-        double[] bestHeuristic = new double[COEFFICIENTS.length];
-        PathNode[] bestNode = new PathNode[COEFFICIENTS.length];
-        for (int i = 0; i < COEFFICIENTS.length; i++) {
-            bestHeuristic[i] = start.estimatedCost;
-            bestNode[i] = start;
-        }
+        PathNode bestPartial = start;
+        double bestPartialMetric = start.estimatedCost;
 
         int nodesExplored = 0;
+        boolean timedOut = false;
 
         while (!openSet.isEmpty() && nodesExplored < MAX_NODES) {
-            if ((nodesExplored & 63) == 0) {
-                long now = System.currentTimeMillis();
-                if (now > failureTimeout || now > primaryTimeout) break;
+            if ((nodesExplored & 63) == 0
+                    && System.currentTimeMillis() > (bestPartial == start ? failureTimeout : primaryTimeout)) {
+                timedOut = true;
+                break;
             }
 
             PathNode current = openSet.poll();
@@ -65,20 +70,17 @@ public class AStarPathFinder {
             current.closed = true;
             nodesExplored++;
 
-            for (int i = 0; i < COEFFICIENTS.length; i++) {
-                double metric = current.estimatedCost + current.cost / COEFFICIENTS[i];
-                if (metric < bestHeuristic[i]) {
-                    bestHeuristic[i] = metric;
-                    bestNode[i] = current;
-                }
+            double metric = current.estimatedCost + current.cost;
+            if (metric < bestPartialMetric) {
+                bestPartialMetric = metric;
+                bestPartial = current;
             }
 
             if (goal.isInGoal(current.x, current.y, current.z)) {
                 return reconstructPath(current, nodesExplored);
             }
 
-            List<Movement> movements = generateMovements(current);
-            for (Movement m : movements) {
+            for (Movement m : generateMovements(current)) {
                 BlockPos dest = m.getTo();
                 BlockPos from = m.getFrom();
 
@@ -112,7 +114,10 @@ public class AStarPathFinder {
             }
         }
 
-        return selectBestPartial(bestNode, bestHeuristic, nodesExplored);
+        if (!timedOut && bestPartial != start && goal.isInGoal(bestPartial.x, bestPartial.y, bestPartial.z)) {
+            return reconstructPath(bestPartial, nodesExplored);
+        }
+        return selectBestPartial(bestPartial, nodesExplored);
     }
 
     private List<Movement> generateMovements(PathNode current) {
@@ -125,9 +130,11 @@ public class AStarPathFinder {
 
                 BlockPos flat = new BlockPos(from.getX() + dx, from.getY(), from.getZ() + dz);
                 addIfValid(moves, new TraverseMovement(from, flat));
+                addIfValid(moves, new BreakAndTraverseMovement(from, flat));
 
                 BlockPos up = new BlockPos(from.getX() + dx, from.getY() + 1, from.getZ() + dz);
                 addIfValid(moves, new AscendMovement(from, up));
+                addIfValid(moves, new BreakAndAscendMovement(from, up));
 
                 BlockPos down = new BlockPos(from.getX() + dx, from.getY() - 1, from.getZ() + dz);
                 if (ctx.isSolidGround(down.getX(), down.getY() - 1, down.getZ())) {
@@ -171,11 +178,6 @@ public class AStarPathFinder {
             }
         }
 
-        if (ctx.hasThrowawayBlock()) {
-            BlockPos pillarUp = new BlockPos(from.getX(), from.getY() + 1, from.getZ());
-            addIfValid(moves, new PillarMovement(from, pillarUp));
-        }
-
         return moves;
     }
 
@@ -185,21 +187,15 @@ public class AStarPathFinder {
         } catch (Exception ignored) {}
     }
 
-    private Path selectBestPartial(PathNode[] bestNode, double[] bestHeuristic, int nodes) {
-        PathNode selected = null;
-        for (int i = 0; i < COEFFICIENTS.length; i++) {
-            PathNode candidate = bestNode[i];
-            if (candidate == null) continue;
-            double distSq =
-                Math.pow(candidate.x - startX, 2) +
-                Math.pow(candidate.z - startZ, 2);
-            if (distSq >= MIN_PARTIAL_DIST_SQ) {
-                selected = candidate;
-                break;
-            }
-        }
-        if (selected == null) return null;
-        return reconstructPath(selected, nodes);
+    private Path selectBestPartial(PathNode bestPartial, int nodes) {
+        if (bestPartial == null) return null;
+
+        double distSq =
+            Math.pow(bestPartial.x - startX, 2) +
+            Math.pow(bestPartial.z - startZ, 2);
+        if (distSq < MIN_PARTIAL_DIST_SQ && bestPartial.parent != null) return null;
+
+        return reconstructPath(bestPartial, nodes);
     }
 
     private Path reconstructPath(PathNode end, int nodes) {

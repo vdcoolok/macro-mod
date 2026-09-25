@@ -13,7 +13,8 @@ public class MacroAction {
         CHAT, CMD,
         CYCLE_CHAT, CYCLE_CMD,
         BIND,
-        PATHFIND, PATHFIND_STOP
+        PATHFIND, PATHFIND_STOP,
+        NLOOK_GOTO, NLOOK_AUTO_GOTO
     }
 
     public Type type;
@@ -30,6 +31,7 @@ public class MacroAction {
     public String keyName;
     public boolean bindIsCommand;
     public boolean bindIsCycle;
+    public boolean nolookLocked;
 
     public static MacroAction keyHold(String k)     { MacroAction a = new MacroAction(); a.type = Type.KEY_HOLD; a.target = k; return a; }
     public static MacroAction keyRelease(String k)  { MacroAction a = new MacroAction(); a.type = Type.KEY_RELEASE; a.target = k; return a; }
@@ -70,6 +72,25 @@ public class MacroAction {
     public static MacroAction pathfindStop() {
         MacroAction a = new MacroAction();
         a.type = Type.PATHFIND_STOP;
+        return a;
+    }
+
+    public static MacroAction nolookGoto(double x, double y, double z) {
+        MacroAction a = new MacroAction();
+        a.type = Type.NLOOK_GOTO;
+        a.x = x;
+        a.y = y;
+        a.z = z;
+        return a;
+    }
+
+    public static MacroAction nolookAutoGoto(double x, double y, double z) {
+        MacroAction a = new MacroAction();
+        a.type = Type.NLOOK_AUTO_GOTO;
+        a.x = x;
+        a.y = y;
+        a.z = z;
+        a.nolookLocked = true;
         return a;
     }
 }

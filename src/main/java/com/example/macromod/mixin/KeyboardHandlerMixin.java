@@ -6,6 +6,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
+
+import java.util.Map;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,8 +20,8 @@ public class KeyboardHandlerMixin {
         at = @At("TAIL")
     )
     private void macromod$reapplyForcedKeys(long window, int action, KeyEvent event, CallbackInfo ci) {
-        for (InputConstants.Key key : ForcedInputState.getForcedKeys()) {
-            KeyMapping.set(key, true);
+        for (Map.Entry<InputConstants.Key, Boolean> e : ForcedInputState.getForcedKeyStates().entrySet()) {
+            KeyMapping.set(e.getKey(), e.getValue());
         }
     }
 }

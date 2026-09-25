@@ -28,6 +28,9 @@ public class MacroExecutor {
     private static final List<MacroBinding> activeBindings = new ArrayList<>();
     private static final Set<MacroAction> registeredBindings = new HashSet<>();
 
+    private static final Map<String, Boolean> keyStates = new HashMap<>();
+    private static final Map<String, Boolean> mouseStates = new HashMap<>();
+
     private static final List<PendingRelease> pendingReleases = new ArrayList<>();
     private static long tickCounter = 0;
 
@@ -52,6 +55,7 @@ public class MacroExecutor {
         activeBindings.clear();
         registeredBindings.clear();
         pendingReleases.clear();
+        NolookController.setMode(NolookController.Mode.NONE);
         PathingBehavior.get().stop();
         releaseAllKeys();
     }
@@ -133,6 +137,19 @@ public class MacroExecutor {
                     }
                 }
                 case PATHFIND -> {
+                    NolookController.setMode(NolookController.Mode.NONE);
+                    PathingBehavior.get().setGoal(new GoalBlock(a.x, a.y, a.z));
+                    index++;
+                    return;
+                }
+                case NLOOK_GOTO -> {
+                    NolookController.setMode(NolookController.Mode.CAMERA);
+                    PathingBehavior.get().setGoal(new GoalBlock(a.x, a.y, a.z));
+                    index++;
+                    return;
+                }
+                case NLOOK_AUTO_GOTO -> {
+                    NolookController.setMode(NolookController.Mode.LOCKED);
                     PathingBehavior.get().setGoal(new GoalBlock(a.x, a.y, a.z));
                     index++;
                     return;
@@ -185,7 +202,9 @@ public class MacroExecutor {
             }
         }
 
-        if (activeSnapLook != null) {
+        boolean nolookPathing = NolookController.getMode() != NolookController.Mode.NONE;
+
+        if (activeSnapLook != null && !nolookPathing) {
             if (Math.abs(p.getYRot() - activeSnapLook.yaw) > 0.1f ||
                 Math.abs(p.getXRot() - activeSnapLook.pitch) > 0.1f) {
                 p.setYRot(activeSnapLook.yaw);
@@ -226,8 +245,13 @@ public class MacroExecutor {
         }
     }
 
-    private static final Map<String, Boolean> keyStates = new HashMap<>();
-    private static final Map<String, Boolean> mouseStates = new HashMap<>();
+    public static boolean isMouseHeld(String button) {
+        return Boolean.TRUE.equals(mouseStates.get(button.toLowerCase()));
+    }
+
+    public static MacroAction getActiveSnapLook() {
+        return activeSnapLook;
+    }
 
     private static void reapplyActiveStates() {
         Minecraft c = Minecraft.getInstance();
