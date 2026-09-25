@@ -204,12 +204,13 @@ public class PathingBehavior {
 
         int renderDistance = mc.options.getEffectiveRenderDistance();
         int maxStepBlocks = Math.max(16, (renderDistance - EXPLORE_CHUNK_MARGIN) * 16);
+        int stepBlocks = Math.min(maxStepBlocks, chebyshev);
 
         double ux = dx / (double) chebyshev;
         double uz = dz / (double) chebyshev;
 
-        int stepX = feet.getX() + (int) Math.round(ux * maxStepBlocks);
-        int stepZ = feet.getZ() + (int) Math.round(uz * maxStepBlocks);
+        int stepX = feet.getX() + (int) Math.round(ux * stepBlocks);
+        int stepZ = feet.getZ() + (int) Math.round(uz * stepBlocks);
 
         if (stepX == feet.getX() && stepZ == feet.getZ()) return null;
         return new GoalXZ(stepX, stepZ);

@@ -104,11 +104,11 @@ public class CachedWorld {
                         System.out.println("[MacroMod] CachedWorld: packed " + n
                             + " chunks (queue " + packQueue.size() + ")");
                     }
-                } catch (Exception e) {
+                } catch (Throwable t) {
                     long n = errorCount.incrementAndGet();
                     if (n <= 5) {
                         System.err.println("[MacroMod] Chunk pack error at ("
-                            + cx + ", " + cz + "): " + e);
+                            + cx + ", " + cz + "): " + t);
                     }
                 } finally {
                     queued.remove(k);

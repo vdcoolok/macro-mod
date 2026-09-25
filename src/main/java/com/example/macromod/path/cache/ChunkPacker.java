@@ -56,7 +56,8 @@ public class ChunkPacker {
         if (state.getBlock() instanceof SnowLayerBlock) {
             if (level != null && pos != null) {
                 int layers = state.getValue(SnowLayerBlock.LAYERS);
-                if (layers <= 3 && isSolidGround(state, level, pos.below())) {
+                BlockState below = level.getBlockState(pos.below());
+                if (layers <= 3 && isSolidGround(below, level, pos.below())) {
                     return PathingBlockType.SOLID;
                 }
                 return PathingBlockType.AVOID;
