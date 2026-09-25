@@ -19,6 +19,7 @@ import net.minecraft.network.chat.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -173,6 +174,60 @@ public class MacroCommand {
                         })
                     )
                 )
+
+                .then(ClientCommands.literal("attack")
+                    .executes(ctx -> {
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack <hostile|mobs|mob_name...>"));
+                        return 0;
+                    })
+                    .then(ClientCommands.literal("hostile")
+                        .executes(ctx -> startAttack(ctx.getSource(), true, List.of())))
+                    .then(ClientCommands.literal("mobs")
+                        .executes(ctx -> startAttack(ctx.getSource(), false, List.of())))
+                    .then(ClientCommands.literal("set")
+                        .executes(ctx -> {
+                            ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack set <attackmode|spaminterval> <value>"));
+                            return 0;
+                        })
+                        .then(ClientCommands.literal("attackmode")
+                            .then(ClientCommands.argument("mode", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    b.suggest("spam");
+                                    b.suggest("crit");
+                                    return b.buildFuture();
+                                })
+                                .executes(ctx -> setAttackMode(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "mode")))))
+                        .then(ClientCommands.literal("spaminterval")
+                            .then(ClientCommands.argument("ms", IntegerArgumentType.integer(50))
+                                .executes(ctx -> setSpamInterval(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "ms")))))
+                    )
+                    .then(ClientCommands.argument("mobs", StringArgumentType.greedyString())
+                        .suggests(mobNameSuggestions())
+                        .executes(ctx -> startAttack(ctx.getSource(), false,
+                            splitNames(StringArgumentType.getString(ctx, "mobs")))))
+                )
+
+                .then(ClientCommands.literal("follow")
+                    .executes(ctx -> {
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro follow <mob_name|player_name>"));
+                        return 0;
+                    })
+                    .then(ClientCommands.argument("target", StringArgumentType.greedyString())
+                        .suggests(followTargetSuggestions())
+                        .executes(ctx -> startFollow(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "target"))))
+                )
+
+                .then(ClientCommands.literal("combatstop")
+                    .executes(ctx -> {
+                        CombatController.stop();
+                        FollowController.stop();
+                        ctx.getSource().sendFeedback(Component.literal("§aCombat and follow stopped."));
+                        return 1;
+                    })
+                )
             );
         });
     }
@@ -183,6 +238,104 @@ public class MacroCommand {
             "§6[Path] §aPathing to §e" + String.format("%.3f", x) + " " + String.format("%.3f", y) + " " + String.format("%.3f", z)
         ));
         return 1;
+    }
+
+    private static int startAttack(FabricClientCommandSource source, boolean hostile, List<String> filters) {
+        if (Minecraft.getInstance().player == null) {
+            source.sendError(Component.literal("§cNot in a world."));
+            return 0;
+        }
+        FollowController.stop();
+        CombatController.start(hostile, filters);
+        String targetDesc = hostile ? "hostile mobs"
+            : filters.isEmpty() ? "all mobs"
+            : String.join(", ", filters);
+        source.sendFeedback(Component.literal("§aAttacking §f" + targetDesc
+            + " §7(" + CombatController.getMode() + " mode, "
+            + CombatController.getSpamInterval() + "ms interval)"));
+        return 1;
+    }
+
+    private static int setAttackMode(FabricClientCommandSource source, String modeName) {
+        String lower = modeName.toLowerCase(Locale.ROOT);
+        switch (lower) {
+            case "spam" -> {
+                CombatController.setMode(CombatController.AttackMode.SPAM);
+                source.sendFeedback(Component.literal("§aAttack mode: §fspam"));
+                return 1;
+            }
+            case "crit" -> {
+                CombatController.setMode(CombatController.AttackMode.CRIT);
+                source.sendFeedback(Component.literal("§aAttack mode: §fcrit"));
+                return 1;
+            }
+            default -> {
+                source.sendError(Component.literal("§cUnknown attack mode: " + modeName + " (use spam or crit)"));
+                return 0;
+            }
+        }
+    }
+
+    private static int setSpamInterval(FabricClientCommandSource source, int ms) {
+        CombatController.setSpamInterval(ms);
+        source.sendFeedback(Component.literal("§aSpam interval: §f" + CombatController.getSpamInterval() + "ms"));
+        return 1;
+    }
+
+    private static int startFollow(FabricClientCommandSource source, String target) {
+        if (Minecraft.getInstance().player == null) {
+            source.sendError(Component.literal("§cNot in a world."));
+            return 0;
+        }
+        CombatController.stop();
+        FollowController.start(target);
+        source.sendFeedback(Component.literal("§aFollowing §f" + target));
+        return 1;
+    }
+
+    private static List<String> splitNames(String input) {
+        List<String> names = new ArrayList<>();
+        for (String part : input.toLowerCase(Locale.ROOT).split("\\s+")) {
+            if (!part.isBlank()) names.add(part);
+        }
+        return names;
+    }
+
+    private static SuggestionProvider<FabricClientCommandSource> mobNameSuggestions() {
+        return (ctx, builder) -> {
+            String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            Minecraft client = Minecraft.getInstance();
+            if (client.level != null && client.player != null) {
+                java.util.Set<String> seen = new java.util.HashSet<>();
+                for (var e : client.level.entitiesForRendering()) {
+                    if (!(e instanceof net.minecraft.world.entity.LivingEntity)) continue;
+                    if (e.getId() == client.player.getId()) continue;
+                    String name = com.example.macromod.TargetRegistry.shortName(e.getType());
+                    if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
+                }
+            }
+            builder.suggest("hostile");
+            builder.suggest("mobs");
+            return builder.buildFuture();
+        };
+    }
+
+    private static SuggestionProvider<FabricClientCommandSource> followTargetSuggestions() {
+        return (ctx, builder) -> {
+            String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            Minecraft client = Minecraft.getInstance();
+            if (client.level != null && client.player != null) {
+                java.util.Set<String> seen = new java.util.HashSet<>();
+                for (var e : client.level.entitiesForRendering()) {
+                    if (e.getId() == client.player.getId()) continue;
+                    String name = e.hasCustomName()
+                        ? e.getCustomName().getString().toLowerCase(Locale.ROOT)
+                        : com.example.macromod.TargetRegistry.shortName(e.getType());
+                    if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
+                }
+            }
+            return builder.buildFuture();
+        };
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> buildMoveCommand(String name) {
@@ -254,6 +407,11 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro action remove <n> §7— remove action N"));
         source.sendFeedback(Component.literal("§f/macro action list §7— list all actions"));
         source.sendFeedback(Component.literal("§f/macro action move <from> <to> §7— move an action"));
+        source.sendFeedback(Component.literal("§f/macro attack <hostile|mobs|names> §7— hunt and attack mobs"));
+        source.sendFeedback(Component.literal("§f/macro attack set attackmode <spam|crit> §7— choose attack style"));
+        source.sendFeedback(Component.literal("§f/macro attack set spaminterval <ms> §7— set hit interval"));
+        source.sendFeedback(Component.literal("§f/macro follow <name> §7— follow a mob or player"));
+        source.sendFeedback(Component.literal("§f/macro combatstop §7— stop attack/follow routines"));
         source.sendFeedback(Component.literal("§f/macro pathdebug walk <x> <y> <z> §7— pathfind to a coord"));
         source.sendFeedback(Component.literal("§f/macro pathdebug pathxz <x> <z> §7— pathfind to XZ"));
         source.sendFeedback(Component.literal("§f/macro pathdebug stop §7— stop pathing"));

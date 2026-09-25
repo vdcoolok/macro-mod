@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MacroParser {
 
@@ -72,6 +73,14 @@ public class MacroParser {
             case "pathstop", "stopwalking", "stopgoto" ->
                 actions.add(MacroAction.pathfindStop());
 
+            case "attack", "kill" -> parseAttack(t, actions);
+            case "follow" -> {
+                if (t.size() < 2) throw new IllegalArgumentException("follow needs a mob or player name");
+                actions.add(MacroAction.follow(joinFrom(t, 1)));
+            }
+            case "combatstop", "stopcombat", "stopattack", "unfollow" ->
+                actions.add(MacroAction.combatStop());
+
             case "snap", "auto" -> parseSnapOrAuto(t, actions);
             case "look" -> parseLook(t, actions);
             case "lookhere" -> actions.add(parseLookFromCurrent());
@@ -116,6 +125,26 @@ public class MacroParser {
     private static MacroAction parsePathfind(List<String> parts) {
         double[] c = parseCoords(parts);
         return MacroAction.pathfind(c[0], c[1], c[2]);
+    }
+
+    private static void parseAttack(List<String> t, List<MacroAction> actions) {
+        if (t.size() < 2) throw new IllegalArgumentException("attack needs hostile, mobs, or mob names");
+        String first = t.get(1).toLowerCase(Locale.ROOT);
+        if (first.equals("hostile")) {
+            actions.add(MacroAction.attack(true, List.of()));
+            return;
+        }
+        if (first.equals("mobs") || first.equals("all")) {
+            actions.add(MacroAction.attack(false, List.of()));
+            return;
+        }
+        List<String> filters = new ArrayList<>();
+        for (int i = 1; i < t.size(); i++) {
+            String name = t.get(i).toLowerCase(Locale.ROOT);
+            if (!name.isBlank()) filters.add(name);
+        }
+        if (filters.isEmpty()) throw new IllegalArgumentException("attack needs at least one mob name");
+        actions.add(MacroAction.attack(false, filters));
     }
 
     private static MacroAction parsePathfindFromCurrent() {

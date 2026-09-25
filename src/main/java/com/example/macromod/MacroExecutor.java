@@ -56,6 +56,8 @@ public class MacroExecutor {
         registeredBindings.clear();
         pendingReleases.clear();
         NolookController.setMode(NolookController.Mode.NONE);
+        CombatController.stop();
+        FollowController.stop();
         PathingBehavior.get().stop();
         releaseAllKeys();
     }
@@ -156,6 +158,22 @@ public class MacroExecutor {
                 }
                 case PATHFIND_STOP -> {
                     PathingBehavior.get().stop();
+                }
+                case ATTACK -> {
+                    FollowController.stop();
+                    CombatController.start(a.hostileOnly, a.messages);
+                    index++;
+                    return;
+                }
+                case FOLLOW -> {
+                    CombatController.stop();
+                    FollowController.start(a.target);
+                    index++;
+                    return;
+                }
+                case COMBAT_STOP -> {
+                    CombatController.stop();
+                    FollowController.stop();
                 }
             }
         } catch (Exception e) {

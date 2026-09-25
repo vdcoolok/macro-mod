@@ -41,6 +41,8 @@ public class MacroMod implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             MacroExecutor.tick(client);
             BackgroundInputHandler.tick(client);
+            CombatController.tick(client);
+            FollowController.tick(client);
             cacheLoadedChunks(client);
         });
 

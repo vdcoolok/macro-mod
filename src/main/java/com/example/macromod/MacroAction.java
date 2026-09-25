@@ -14,7 +14,8 @@ public class MacroAction {
         CYCLE_CHAT, CYCLE_CMD,
         BIND,
         PATHFIND, PATHFIND_STOP,
-        NLOOK_GOTO, NLOOK_AUTO_GOTO
+        NLOOK_GOTO, NLOOK_AUTO_GOTO,
+        ATTACK, FOLLOW, COMBAT_STOP
     }
 
     public Type type;
@@ -32,6 +33,7 @@ public class MacroAction {
     public boolean bindIsCommand;
     public boolean bindIsCycle;
     public boolean nolookLocked;
+    public boolean hostileOnly;
 
     public static MacroAction keyHold(String k)     { MacroAction a = new MacroAction(); a.type = Type.KEY_HOLD; a.target = k; return a; }
     public static MacroAction keyRelease(String k)  { MacroAction a = new MacroAction(); a.type = Type.KEY_RELEASE; a.target = k; return a; }
@@ -72,6 +74,27 @@ public class MacroAction {
     public static MacroAction pathfindStop() {
         MacroAction a = new MacroAction();
         a.type = Type.PATHFIND_STOP;
+        return a;
+    }
+
+    public static MacroAction attack(boolean hostile, List<String> filters) {
+        MacroAction a = new MacroAction();
+        a.type = Type.ATTACK;
+        a.hostileOnly = hostile;
+        a.messages = filters;
+        return a;
+    }
+
+    public static MacroAction follow(String name) {
+        MacroAction a = new MacroAction();
+        a.type = Type.FOLLOW;
+        a.target = name;
+        return a;
+    }
+
+    public static MacroAction combatStop() {
+        MacroAction a = new MacroAction();
+        a.type = Type.COMBAT_STOP;
         return a;
     }
 
