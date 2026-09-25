@@ -14,7 +14,8 @@ public final class BackgroundInputHandler {
             return;
         }
 
-        boolean wantBreak = MacroExecutor.isMouseHeld("left");
+        boolean wantBreak = MacroExecutor.isMouseHeld("left")
+                || ForcedInputState.isMouseForced(0);
 
         if (wantBreak && client.screen != null) {
             client.gameMode.continueAttack(true);

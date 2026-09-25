@@ -9,6 +9,7 @@ public class PathNode implements Comparable<PathNode> {
     public PathNode parent;
     public double cost;
     public double estimatedCost;
+    public double priority;
     public boolean closed;
     public Movement movementToReach;
 
@@ -18,13 +19,13 @@ public class PathNode implements Comparable<PathNode> {
         this.z = z;
     }
 
-    public double combinedCost() { return cost + estimatedCost; }
-
     public BlockPos toBlockPos() { return new BlockPos(x, y, z); }
 
     @Override
     public int compareTo(PathNode o) {
-        return Double.compare(this.combinedCost(), o.combinedCost());
+        int c = Double.compare(this.priority, o.priority);
+        if (c != 0) return c;
+        return Double.compare(this.estimatedCost, o.estimatedCost);
     }
 
     @Override

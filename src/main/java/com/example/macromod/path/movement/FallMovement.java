@@ -21,6 +21,8 @@ public class FallMovement extends Movement implements ActionCosts {
         if (fallDistance < 1 || fallDistance > ctx.maxFallDistance()) return COST_INF;
         if (!ctx.isSolidGround(to.getX(), to.getY() - 1, to.getZ())) return COST_INF;
         if (!ctx.isPassable(to.getX(), to.getY(), to.getZ())) return COST_INF;
+        if (!ctx.isPassable(to.getX(), to.getY() + 1, to.getZ())) return COST_INF;
+        if (!ctx.hasStandingHeadroom(to.getX(), to.getY(), to.getZ())) return COST_INF;
         cost = WALK_OFF_BLOCK_COST + FALL_N_BLOCKS_COST[fallDistance];
         return cost;
     }

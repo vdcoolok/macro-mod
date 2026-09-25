@@ -5,26 +5,18 @@ import com.example.macromod.path.cache.CachedChunk;
 import com.example.macromod.path.cache.CachedWorld;
 import com.example.macromod.path.cache.PathingBlockType;
 import com.example.macromod.path.render.RotationController;
-import com.mojang.blaze3d.platform.InputConstants;
-
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class CalculationContext implements ActionCosts {
 
     private final Minecraft mc;
     private final CachedWorld cache;
     private final int minY, maxY;
-    private final Map<BlockPos, Double> costCache = new HashMap<>();
 
     public CalculationContext() {
         this.mc = Minecraft.getInstance();
@@ -58,6 +50,11 @@ public class CalculationContext implements ActionCosts {
         return getBlockType(x, y, z) == PathingBlockType.AVOID;
     }
 
+    public boolean isLivePassable(int x, int y, int z) {
+        if (mc.level == null) return false;
+        return mc.level.getBlockState(new BlockPos(x, y, z)).isAir();
+    }
+
     public boolean isObstructing(int x, int y, int z) {
         if (isPassable(x, y, z)) return false;
         return isSolidGround(x, y - 1, z) && isPassable(x, y + 1, z);
@@ -82,16 +79,51 @@ public class CalculationContext implements ActionCosts {
     }
 
     public boolean canBreak(BlockPos pos) {
-        CachedChunk c = cache.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
-        if (c == null) return false;
-        Block block = c.getSpecialBlock(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
-        if (block == null) return true;
-        return block != Blocks.CHEST && block != Blocks.SPAWNER;
+        return !Double.isInfinite(blockBreakTicks(pos.getX(), pos.getY(), pos.getZ()));
     }
 
     public double breakCost(BlockPos pos) {
         if (!isObstructing(pos.getX(), pos.getY(), pos.getZ())) return 0.0;
-        return 20.0;
+        return blockBreakTicks(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    public static final int OVERHEAD_SCAN_LAYERS = 6;
+    public static final int MAX_OVERHEAD_BREAKS = 3;
+    public static final int UNDER_SCAN_LAYERS = 6;
+
+    public boolean hasStandingHeadroom(int x, int feetY, int z) {
+        for (int y = feetY + 1; y <= feetY + OVERHEAD_SCAN_LAYERS; y++) {
+            if (y >= maxY) return true;
+            if (getBlockType(x, y, z) == PathingBlockType.SOLID) return false;
+        }
+        return true;
+    }
+
+    public double standingHeadroomBreakCost(int x, int feetY, int z) {
+        int breaks = 0;
+        double ticks = 0.0;
+        int top = Math.min(feetY + OVERHEAD_SCAN_LAYERS, maxY - 1);
+
+        for (int y = feetY + 2; y <= top; y++) {
+            if (getBlockType(x, y, z) != PathingBlockType.SOLID) continue;
+            double t = blockBreakTicks(x, y, z);
+            if (Double.isInfinite(t)) return Double.POSITIVE_INFINITY;
+            breaks++;
+            ticks += t;
+            if (breaks > MAX_OVERHEAD_BREAKS) return Double.POSITIVE_INFINITY;
+        }
+        return ticks;
+    }
+
+    public double blockBreakTicks(int x, int y, int z) {
+        CachedChunk c = cache.getChunk(x >> 4, z >> 4);
+        if (c == null) return Double.POSITIVE_INFINITY;
+        byte bt = c.getBreakTicks(x & 15, y, z & 15);
+        return bt == CachedChunk.UNBREAKABLE ? Double.POSITIVE_INFINITY : 10.0 + bt;
+    }
+
+    public double overheadBreakCost(int x, int feetY, int z) {
+        return standingHeadroomBreakCost(x, feetY, z);
     }
 
     public double blockPlacePenalty() { return BLOCK_PLACEMENT_PENALTY; }
@@ -158,6 +190,14 @@ public class CalculationContext implements ActionCosts {
         return true;
     }
 
+    public boolean canAscendBreakingTo(int x, int y, int z) {
+        if (!isSolidGround(x, y - 1, z)) return false;
+        if (!isPassable(x, y + 2, z)) return false;
+        if (!isPassable(x, y, z) || !isPassable(x, y + 1, z)) return canBreak(new BlockPos(x, y, z))
+                || canBreak(new BlockPos(x, y + 1, z));
+        return true;
+    }
+
     public boolean playerNear(BlockPos pos, double threshold) {
         LocalPlayer p = mc.player;
         if (p == null) return false;
@@ -169,6 +209,10 @@ public class CalculationContext implements ActionCosts {
 
     public boolean playerOnGround() {
         return mc.player != null && mc.player.onGround();
+    }
+
+    public CachedWorld cache() {
+        return cache;
     }
 
     public BlockPos playerFeetBlock() {
@@ -197,6 +241,10 @@ public class CalculationContext implements ActionCosts {
         if (bound != null) {
             KeyMapping.set(bound, pressed);
             ForcedInputState.forceKey(bound, pressed);
+            if (pressed && name.equalsIgnoreCase("attack")
+                    && mc.gameMode != null && !mc.gameMode.isDestroying()) {
+                KeyMapping.click(bound);
+            }
         }
     }
 
@@ -222,11 +270,14 @@ public class CalculationContext implements ActionCosts {
         RotationController.setTarget(yaw, pitch);
     }
 
-    public double getCachedCost(BlockPos pos) {
-        return costCache.getOrDefault(pos, -1.0);
-    }
-
-    public void cacheCost(BlockPos pos, double cost) {
-        costCache.put(pos, cost);
+    public void lookAtDirect(double x, double y, double z) {
+        LocalPlayer p = mc.player;
+        if (p == null) return;
+        double dx = x - p.getX();
+        double dy = y - (p.getY() + p.getEyeHeight());
+        double dz = z - p.getZ();
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        p.setYRot((float) Math.toDegrees(Math.atan2(-dx, dz)));
+        p.setXRot((float) Math.toDegrees(-Math.atan2(dy, horizontal)));
     }
 }

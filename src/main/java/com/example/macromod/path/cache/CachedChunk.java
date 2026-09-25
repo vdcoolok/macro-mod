@@ -10,8 +10,10 @@ public class CachedChunk {
 
     public static final int SIZE = 16 * 16 * 384;
     public static final int Y_OFFSET = 64;
+    public static final byte UNBREAKABLE = (byte) 255;
 
     private final BitSet data;
+    private final byte[] breakTicks;
     private final Map<Integer, Block> specialBlocks;
     public final int x, z;
     private boolean loaded;
@@ -20,17 +22,18 @@ public class CachedChunk {
         this.x = x;
         this.z = z;
         this.data = new BitSet(SIZE * 2);
+        this.breakTicks = new byte[SIZE];
         this.specialBlocks = new HashMap<>();
         this.loaded = false;
     }
 
-    public void set(int lx, int y, int lz, PathingBlockType type) {
+    public synchronized void set(int lx, int y, int lz, PathingBlockType type) {
         int index = index(lx, y, lz);
         if (index < 0 || index >= SIZE) return;
         setBits(index, type.bits);
     }
 
-    public PathingBlockType get(int lx, int y, int lz) {
+    public synchronized PathingBlockType get(int lx, int y, int lz) {
         int index = index(lx, y, lz);
         if (index < 0 || index >= SIZE) return PathingBlockType.AVOID;
         return PathingBlockType.fromOrdinal(getBits(index));
@@ -38,11 +41,25 @@ public class CachedChunk {
 
     public boolean isLoaded() { return loaded; }
     public void markLoaded() { loaded = true; }
+
+    public byte getBreakTicks(int lx, int y, int lz) {
+        int index = index(lx, y, lz);
+        if (index < 0 || index >= SIZE) return UNBREAKABLE;
+        return breakTicks[index];
+    }
+
+    public void setBreakTicks(int lx, int y, int lz, byte ticks) {
+        int index = index(lx, y, lz);
+        if (index < 0 || index >= SIZE) return;
+        breakTicks[index] = ticks;
+    }
+
     public Block getSpecialBlock(int lx, int y, int lz) {
         int index = index(lx, y, lz);
         if (index < 0 || index >= SIZE) return null;
         return specialBlocks.get(index);
     }
+
     public void setSpecialBlock(int lx, int y, int lz, Block block) {
         int index = index(lx, y, lz);
         if (index < 0 || index >= SIZE) return;

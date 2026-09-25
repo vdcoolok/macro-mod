@@ -5,7 +5,7 @@
 
 **A powerful client-side macro system for Minecraft 26.2**
 
-*Hold keys, click mice, teleport with sub-millimeter precision, lock your view, chat, run commands, and loop it all — driven entirely from simple text fil ues.*
+*Hold keys, click mice, teleport with sub-millimeter precision, lock your view, chat, run commands, and loop it all — driven entirely from simple text files.*
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?style=for-the-badge&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Fabric-0.19.3-DBB69B?style=for-the-badge)](https://fabricmc.net/)

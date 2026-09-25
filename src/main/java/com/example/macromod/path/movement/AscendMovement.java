@@ -18,6 +18,7 @@ public class AscendMovement extends Movement implements ActionCosts {
     public double calculateCost(CalculationContext ctx) {
         if (!ctx.canAscendTo(to.getX(), to.getY(), to.getZ())) return COST_INF;
         if (!ctx.isPassable(from.getX(), from.getY() + 2, from.getZ())) return COST_INF;
+        if (!ctx.hasStandingHeadroom(to.getX(), to.getY(), to.getZ())) return COST_INF;
         cost = JUMP_ONE_BLOCK_COST;
         return cost;
     }

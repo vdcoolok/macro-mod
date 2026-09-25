@@ -54,6 +54,13 @@ public class CachedWorld {
         return chunks.get(key(x, z));
     }
 
+    public void markAir(int x, int y, int z) {
+        CachedChunk c = chunks.get(key(x >> 4, z >> 4));
+        if (c == null || !c.isLoaded()) return;
+        c.set(x & 15, y, z & 15, PathingBlockType.AIR);
+        c.setBreakTicks(x & 15, y, z & 15, (byte) 0);
+    }
+
     public boolean isLoaded(int x, int z) {
         CachedChunk c = chunks.get(key(x, z));
         return c != null && c.isLoaded();

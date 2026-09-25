@@ -25,6 +25,7 @@ public class AStarPathFinder implements ActionCosts {
     private static final long PRIMARY_TIMEOUT_MS = 4000;
     private static final long FAILURE_TIMEOUT_MS = 10_000;
     private static final double MIN_PARTIAL_DIST_SQ = 9.0;
+    private static final double HEURISTIC_WEIGHT = 1.0;
 
     private final CalculationContext ctx;
     private final Goal goal;
@@ -49,6 +50,7 @@ public class AStarPathFinder implements ActionCosts {
         PathNode start = new PathNode(startX, startY, startZ);
         start.cost = 0;
         start.estimatedCost = goal.heuristic(startX, startY, startZ);
+        start.priority = start.estimatedCost;
         openSet.add(start);
         allNodes.put(key(startX, startY, startZ), start);
 
@@ -109,6 +111,7 @@ public class AStarPathFinder implements ActionCosts {
                     node.cost = tentativeG;
                     node.movementToReach = m;
                     node.estimatedCost = goal.heuristic(dest.getX(), dest.getY(), dest.getZ());
+                    node.priority = tentativeG + node.estimatedCost;
                     openSet.add(node);
                 }
             }

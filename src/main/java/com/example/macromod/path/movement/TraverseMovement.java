@@ -19,16 +19,19 @@ public class TraverseMovement extends Movement implements ActionCosts {
         if (!ctx.isPassable(to.getX(), to.getY(), to.getZ())) return COST_INF;
         if (!ctx.isPassable(to.getX(), to.getY() + 1, to.getZ())) return COST_INF;
         if (!ctx.isSolidGround(to.getX(), to.getY() - 1, to.getZ())) return COST_INF;
+        if (!ctx.hasStandingHeadroom(to.getX(), to.getY(), to.getZ())) return COST_INF;
         if (ctx.isHazard(to.getX(), to.getY(), to.getZ())) return COST_INF;
+        if (ctx.isHazard(to.getX(), to.getY() + 1, to.getZ())) return COST_INF;
 
         int dx = to.getX() - from.getX();
         int dz = to.getZ() - from.getZ();
+
         if (dx != 0 && dz != 0) {
             if (!ctx.canFitThroughDiagonal(from.getX(), from.getY(), from.getZ(), dx, dz)) return COST_INF;
             if (!ctx.canExitDiagonal(to.getX(), from.getY(), to.getZ(), dx, dz)) return COST_INF;
-            cost = WALK_ONE_BLOCK_COST * 1.41421356;
+            cost = SPRINT_ONE_BLOCK_COST * 1.41421356;
         } else {
-            cost = WALK_ONE_BLOCK_COST;
+            cost = SPRINT_ONE_BLOCK_COST;
         }
         return cost;
     }
