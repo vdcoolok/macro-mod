@@ -11,7 +11,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(KeyMapping.class)
 public class KeyMappingMixin {
 
-    @Inject(method = "releaseAll", at = @At("TAIL"))
+    @Inject(
+        method = {"releaseAll", "restoreToggleStatesOnScreenClosed"},
+        at = @At("TAIL")
+    )
     private static void macromod$reapplyForcedInputs(CallbackInfo ci) {
         for (var entry : ForcedInputState.getForcedKeyStates().entrySet()) {
             KeyMapping.set(entry.getKey(), entry.getValue());
