@@ -1,11 +1,11 @@
 
 <div align="center">
 
-# ⚡ MacroMod
+# 🧞‍♂️ MacroMod
 
-**A powerful client-side macro system for Minecraft 26.2**
+**A new client-side macro/baritone-like mod for Minecraft 26.2**
 
-*Hold keys, click mice, teleport with sub-millimeter precision, lock your view, chat, run commands, and loop it all — driven entirely from simple text files.*
+*path finding, attacking, parkour, macro driven completely via .macro files*
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?style=for-the-badge&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Fabric-0.19.3-DBB69B?style=for-the-badge)](https://fabricmc.net/)
@@ -47,34 +47,37 @@
 
 ---
 
-## 🎯 What is MacroMod?
+## What is MacroMod?
 
-**MacroMod** is a lightweight, client-side Fabric mod that runs plain-text `.macro` files as in-game action sequences. It chains actions with simple comma-separated syntax, so a whole behaviour reads like English:
+**MacroMod** is a lightweight, client-side Fabric mod that's able to run custom macro's made by you, with great path finding, attacking, following capabilities and even parkour :P
+
+for example:
 
 ```macro
-hold w, hold d, wait 10s, release d, wait 10s, release w
+goto 123, 50, -30
+lookat 231 / 32
+
+hold w, wait 10s, hold d, wait 2s, release w, release d
 ```
 
-That one line holds W, holds D, waits ten seconds, releases D, waits ten more, and releases W. No GUI, no config menus — just type `/macro <filename>` in chat and watch it run.
+---
+
+## Features
+
+-  **Hold, release, or press any key or mouse button**
+-  **Precise movement** — `.001` block precision via `goto`
+-  **Precise look** — `.1` degree precision via `look at`
+-  **Snap-back locks** — position and view snap back the instant they drift
+-  **Send chat messages and commands**
+-  **Cycle** through lists of chats or commands on each pass
+-  **Keybinds** — press a key in-game to send a message or advance a cycle
+-  **Waits** with human-friendly units — `500ms`, `0.5s`, `2s`, `1m`
+-  **Loops** — finite (`loop 5`) or infinite (`loop`)
+-  **One-line chaining** — commas separate actions, so complex sequences stay readable
 
 ---
 
-## ✨ Features
-
-- 🎮 **Hold, release, or press any key or mouse button**
-- 📍 **Precise movement** — `.001` block precision via `goto`
-- 👁️ **Precise look** — `.1` degree precision via `look at`
-- 🔒 **Snap-back locks** — position and view snap back the instant they drift
-- 💬 **Send chat messages and commands**
-- 🔁 **Cycle** through lists of chats or commands on each pass
-- ⌨️ **Keybinds** — press a key in-game to send a message or advance a cycle
-- 🕒 **Waits** with human-friendly units — `500ms`, `0.5s`, `2s`, `1m`
-- 🔂 **Loops** — finite (`loop 5`) or infinite (`loop`)
-- 📝 **One-line chaining** — commas separate actions, so complex sequences stay readable
-
----
-
-## 📋 Requirements
+## Requirements
 
 | Component | Version |
 |---|---|
@@ -83,11 +86,9 @@ That one line holds W, holds D, waits ten seconds, releases D, waits ten more, a
 | **Fabric API** | `0.161.0+26.2` or newer |
 | **Java** | **25** (mandatory — 26.2 does not run on Java 21) |
 
-> ⚠️ **Important:** Minecraft 26.1+ ships **unobfuscated** with official Mojang names. This mod builds directly against those names — there are **no Yarn mappings** involved.
-
 ---
 
-## 🚀 Installation
+## Installation
 
 1. Install **Fabric Loader 0.19.3+** for Minecraft 26.2 via the [Fabric installer](https://fabricmc.net/use/installer/).
 2. Install **Java 25** from [Adoptium](https://adoptium.net/) or your package manager. Verify with `java -version`.
@@ -96,61 +97,44 @@ That one line holds W, holds D, waits ten seconds, releases D, waits ten more, a
    - `fabric-api-0.161.0+26.2.jar` ([download](https://modrinth.com/mod/fabric-api))
 4. Launch the **Fabric 26.2** profile.
 
-That's it. The mod is **client-side only** — you don't need it installed on any server.
+That's it.  
 
 ---
 
-## 🏁 Quick Start
+## Quick Start
 
 1. Launch Minecraft and join any world (singleplayer or multiplayer).
 2. Run `/macro` in chat — the mod auto-creates your `macros/` folder.
-3. Create a file at `.minecraft/mods/macros/patrol.macro`:
-
-   ```macro
-   loop
-     goto "100 64 200", look at "0 / 0", wait 1s
-     goto "150.5 70.25 -300.75", look at "180 / 45", wait 1s
-   endloop
-   ```
-
-4. Back in-game, run `/macro patrol`.
-5. Stop any time with `/macro stop`.
+3. Look through the `/macro` options
+4. Create a macro either via making a [name].macro file inside of the macros/ folder inside .minecraft/mods or via `/macro create [name]`
+5. If you're using `/macro create [name]` you can edit the macro with `/macro edit [name]` and then edit it with `/macro action [action]`
 
 ---
 
-## 📁 Macro File Location
+## Macro File Location
 
 ```
 .minecraft/
 └── mods/
     └── macros/          ← your .macro files go here
-        ├── patrol.macro
-        ├── farm.macro
-        └── demo.macro
-```
-
-The folder is **created automatically** the first time you run `/macro`. The `.macro` extension is optional on the command line:
-
-```bash
-/macro patrol          # ✅ resolves to patrol.macro
-/macro patrol.macro    # ✅ also works
+        └── test.macro
 ```
 
 ---
 
-## 🕹️ Command Reference
+## Command Reference
 
 | Command | Description |
 |---|---|
 | `/macro` | Shows usage and confirms the macros folder location |
-| `/macro <filename>` | Runs the specified macro file |
+| `/macro load <filename>` | Runs the specified macro file |
 | `/macro stop` | Immediately stops the running macro, releases all keys, and clears binds |
 
 The command is **client-side only** — it never touches the server and works on any server you can join.
 
 ---
 
-## 📝 Syntax Reference
+## Syntax Reference
 
 ### The Rules
 
