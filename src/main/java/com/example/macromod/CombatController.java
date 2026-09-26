@@ -2,6 +2,7 @@ package com.example.macromod;
 
 import com.example.macromod.path.behavior.PathingBehavior;
 import com.example.macromod.path.calc.CalculationContext;
+import com.example.macromod.path.goal.GoalBlock;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -129,13 +130,10 @@ public final class CombatController {
         PathingBehavior pathing = PathingBehavior.get();
         if (distSq > MAX_ATTACK_DIST_SQ) {
             Vec3 tp = target.position();
-            BlockPos goal = new BlockPos(
-                Math.floor(tp.x),
-                Math.floor(tp.y),
-                Math.floor(tp.z));
+            BlockPos goal = BlockPos.containing(tp.x, tp.y, tp.z);
             if (!goal.equals(lastGoal)) {
                 lastGoal = goal;
-                pathing.setGoal(goal);
+                pathing.setGoal(new GoalBlock(goal));
             }
         } else {
             lastGoal = null;
