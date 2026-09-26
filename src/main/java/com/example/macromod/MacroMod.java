@@ -23,6 +23,7 @@ public class MacroMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         System.out.println("[MacroMod] Initializing for Minecraft 26.2...");
+        FreeCamera.register();
         ModSettings.load();
         MacroCommand.register();
         CachedWorld.get();
@@ -30,6 +31,7 @@ public class MacroMod implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             CachedWorld.get().clear();
             MacroExecutor.stop();
+            FreeCamera.reset();
         });
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -53,6 +55,7 @@ public class MacroMod implements ClientModInitializer {
 
             MacroExecutor.tick(client);
             BackgroundInputHandler.tick(client);
+            FreeCamera.tick(client);
             CombatController.tick(client);
             FollowController.tick(client);
             cacheLoadedChunks(client);

@@ -47,6 +47,22 @@
 | `/macro follow only <namespace:id>` | Follows only that exact entity type |
 | `/macro combatstop` | Stops attack/follow without stopping the macro |
 | `/macro set smoothlook <true\|false>` | Smooths all automatic turning, on by default, `auto look` stays instant. Your own view is never taken over |
+| `/macro set freecam <off\|orbit\|free>` | Detaches the view from your head. `orbit` follows behind you, `free` flies on WASD |
+| `/macro set fcamdist <blocks>` | Distance the free camera sits behind you, scroll also zooms |
+
+### Free Camera
+
+Detaches your view from your head, which is what you want when the bot is fighting or pathing and you want to walk around it and watch. Press F6 to cycle `off`, `orbit`, `free`.
+
+| Mode | Behavior |
+|---|---|
+| `off` | Normal first person view |
+| `orbit` | Camera sits behind you and follows. WASD still moves you, so the bot keeps doing its job while you watch from behind |
+| `free` | WASD flies the camera instead of you and your movement input is suppressed. Hold shift to move faster, space to go up, scroll to zoom |
+
+In every mode the mouse still looks around and your view is never fought over, because the bot sends its own rotation to the server and restores your view afterwards. `fcamdist` sets the starting distance.
+
+The free camera is forced off while `/macro attack` or `/macro kill` is running, since attacking needs your real view. Starting an attack turns it off for you, and F6 or the command will refuse to turn it back on until `/macro combatstop`. You get a one line notice in chat instead of a silent no-op.
 
 > Everything is under `/macro`. There is no `/combat` command. Under `/macro attack` you only get `set`, `passive`, `hostile`, `all` and `only`, the mob list is under `only`.
 >

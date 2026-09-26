@@ -66,6 +66,8 @@ public class MacroCommand {
                 .then(ClientCommands.literal("set")
                     .executes(ctx -> {
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set <smoothlook|botview> <true|false>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set freecam <off|orbit|free>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set fcamdist <blocks>"));
                         return 0;
                     })
                     .then(ClientCommands.literal("smoothlook")
@@ -80,6 +82,19 @@ public class MacroCommand {
                         .then(ClientCommands.literal("false")
                             .executes(ctx -> setBotView(ctx.getSource(), false)))
                     )
+                    .then(ClientCommands.literal("freecam")
+                        .then(ClientCommands.literal("off")
+                            .executes(ctx -> setFreeCamera(ctx.getSource(), FreeCamera.Mode.OFF)))
+                        .then(ClientCommands.literal("orbit")
+                            .executes(ctx -> setFreeCamera(ctx.getSource(), FreeCamera.Mode.ORBIT)))
+                        .then(ClientCommands.literal("free")
+                            .executes(ctx -> setFreeCamera(ctx.getSource(), FreeCamera.Mode.FREE)))
+                    )
+                    .then(ClientCommands.literal("fcamdist")
+                        .then(ClientCommands.argument("blocks", DoubleArgumentType.doubleArg(0.6D, 64.0D))
+                            .executes(ctx -> setFreeCameraDistance(
+                                ctx.getSource(),
+                                DoubleArgumentType.getDouble(ctx, "blocks")))))
                 )
 
                 .then(ClientCommands.literal("action")
@@ -333,6 +348,24 @@ public class MacroCommand {
         return 1;
     }
 
+    private static int setFreeCamera(FabricClientCommandSource source, FreeCamera.Mode mode) {
+        boolean applied = FreeCamera.setModeChecked(mode);
+        if (applied) {
+            ModSettings.setFreeCamera(FreeCamera.getMode());
+            source.sendFeedback(Component.literal("§aFree camera: §f" + FreeCamera.getMode().label()));
+        } else {
+            source.sendFeedback(Component.literal("§cFree camera stays off while attacking, run §f/macro combatstop§c first"));
+        }
+        return 1;
+    }
+
+    private static int setFreeCameraDistance(FabricClientCommandSource source, double blocks) {
+        ModSettings.setFreeCameraDistance(blocks);
+        source.sendFeedback(Component.literal(
+            "§aFree camera distance: §f" + String.format("%.1f", FreeCamera.getDistance()) + " §7blocks"));
+        return 1;
+    }
+
     private static int pathTo(FabricClientCommandSource source, double x, double y, double z) {
         PathingBehavior.get().setGoal(new GoalBlock(x, y, z));
         source.sendFeedback(Component.literal(
@@ -540,6 +573,8 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro combatstop §7— stop attack/follow routines"));
         source.sendFeedback(Component.literal("§f/macro set smoothlook <true|false> §7— smooth all head turning"));
         source.sendFeedback(Component.literal("§f/macro set botview <true|false> §7— point the body where the server sees it"));
+        source.sendFeedback(Component.literal("§f/macro set freecam <off|orbit|free> §7— detach the view, F6 cycles"));
+        source.sendFeedback(Component.literal("§f/macro set fcamdist <blocks> §7— free camera distance"));
         source.sendFeedback(Component.literal("§f/macro pathdebug walk <x> <y> <z> §7— pathfind to a coord"));
         source.sendFeedback(Component.literal("§f/macro pathdebug pathxz <x> <z> §7— pathfind to XZ"));
         source.sendFeedback(Component.literal("§f/macro pathdebug stop §7— stop pathing"));

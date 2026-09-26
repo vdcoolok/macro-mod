@@ -8,7 +8,10 @@
     "KeyMappingMixin",
     "GameRendererMixin",
     "EntityMixin",
-    "LocalPlayerMixin"
+    "LocalPlayerMixin",
+    "CameraMixin",
+    "MouseHandlerMixin",
+    "ClientInputMixin"
   ],
   "injectors": {
     "defaultRequire": 1

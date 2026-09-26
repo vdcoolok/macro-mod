@@ -15,11 +15,15 @@ public final class ModSettings {
     private static final String KEY_SPAM_INTERVAL = "spaminterval";
     private static final String KEY_SMOOTH_LOOK = "smoothlook";
     private static final String KEY_BOT_VIEW = "botview";
+    private static final String KEY_FREE_CAM = "freecam";
+    private static final String KEY_FCAM_DIST = "fcamdist";
 
     private static final String DEFAULT_ATTACK_MODE = "spam";
     private static final long DEFAULT_SPAM_INTERVAL = 500L;
     private static final boolean DEFAULT_SMOOTH_LOOK = true;
     private static final boolean DEFAULT_BOT_VIEW = false;
+    private static final String DEFAULT_FREE_CAM = "off";
+    private static final double DEFAULT_FCAM_DIST = 4.0;
 
     private static final Properties values = new Properties();
     private static Path file = null;
@@ -43,6 +47,18 @@ public final class ModSettings {
         CombatController.setSpamInterval(readLong(KEY_SPAM_INTERVAL, DEFAULT_SPAM_INTERVAL));
         RotationController.setSmoothLookEnabled(readBoolean(KEY_SMOOTH_LOOK, DEFAULT_SMOOTH_LOOK));
         RotationController.setBotViewEnabled(readBoolean(KEY_BOT_VIEW, DEFAULT_BOT_VIEW));
+        FreeCamera.setMode(FreeCamera.Mode.parse(readString(KEY_FREE_CAM, DEFAULT_FREE_CAM)));
+        FreeCamera.setDistance(readDouble(KEY_FCAM_DIST, DEFAULT_FCAM_DIST));
+    }
+
+    public static void setFreeCamera(FreeCamera.Mode next) {
+        FreeCamera.setMode(next);
+        put(KEY_FREE_CAM, FreeCamera.getMode().label());
+    }
+
+    public static void setFreeCameraDistance(double value) {
+        FreeCamera.setDistance(value);
+        put(KEY_FCAM_DIST, Double.toString(FreeCamera.getDistance()));
     }
 
     public static void setAttackMode(CombatController.AttackMode mode) {
@@ -84,6 +100,23 @@ public final class ModSettings {
         if (raw == null) return fallback;
         try {
             return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static String readString(String key, String fallback) {
+        String raw = values.getProperty(key);
+        if (raw == null) return fallback;
+        raw = raw.trim();
+        return raw.isEmpty() ? fallback : raw;
+    }
+
+    private static double readDouble(String key, double fallback) {
+        String raw = values.getProperty(key);
+        if (raw == null) return fallback;
+        try {
+            return Double.parseDouble(raw.trim());
         } catch (NumberFormatException e) {
             return fallback;
         }

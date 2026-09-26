@@ -43,6 +43,7 @@
 | **Pathfinding** | A* walking to coordinates. Jumps gaps, climbs, breaks through blocks, avoids cliffs and hazards |
 | **Precise locks** | `auto goto` / `auto look` snap back the instant you drift |
 | **No-look pathing** | Walk somewhere while your camera stays free, or locked on a fixed view |
+| **Free camera** | F6 detaches your view so you can watch the bot from behind or fly around it freely |
 | **Attacking** | Find, chase and kill mobs by name or category, with spam or crit mode |
 | **Following** | Follow any mob or player as it moves |
 | **In-game macro editor** | Create, edit and reorder macros from chat, no file juggling |
@@ -85,6 +86,7 @@
 | `/macro follow [only] <name>` | Follows a mob or player |
 | `/macro combatstop` | Stops attack/follow only |
 | `/macro pathdebug walk <x> <y> <z>` | Tests pathfinding to a coordinate |
+| `/macro set freecam <off\|orbit\|free>` | Detaches your view, F6 cycles the same modes |
 
 > The full command tree and macro file syntax are in [docs/USAGE.md](docs/USAGE.md).
 

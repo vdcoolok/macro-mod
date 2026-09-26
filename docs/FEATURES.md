@@ -108,7 +108,7 @@ Each target is its own argument, up to four, so completion keeps working after t
 | `spam` *(default)* | Hits on an interval, configurable via `/macro attack set spaminterval <ms>` |
 | `crit` | Jumps and strikes partway down the fall for the critical |
 
-Both the mode and the interval are remembered between launches, as are `/macro set smoothlook` and `/macro set botview`. They live in `mods/macros/settings.properties` next to your macro files.
+Both the mode and the interval are remembered between launches, as are `/macro set smoothlook`, `/macro set botview` and `/macro set freecam`. They live in `mods/macros/settings.properties` next to your macro files.
 
 > The bot always faces its target and closes to within 4.45 blocks before swinging, in both modes. Outside that range it keeps walking toward the target and swings as soon as it is back in range. In `crit` mode each attempt is a jump followed by a strike once the player is about halfway down the fall, since striking at the apex happens before any fall distance has accumulated and the critical does not register. If the target backs out of range mid jump the strike is skipped and the bot walks in again.
 
@@ -121,6 +121,22 @@ Both the mode and the interval are remembered between launches, as are `/macro s
 `/macro follow <name>` continuously paths to the closest entity matching a mob id or player/custom name, updating the goal as the target moves.
 
 > Your view is never forced toward the target.
+
+---
+
+## Free Camera
+
+Detaches the rendering camera from your head by taking over the client camera after the game positions it. This is the one that lets you watch the bot instead of being stuck inside it.
+
+| Mode | Behavior |
+|---|---|
+| `off` | Vanilla first person |
+| `orbit` | Camera sits behind you at `fcamdist` and follows your look direction. WASD still moves you |
+| `free` | WASD flies the camera and your movement input is suppressed for that tick. Shift is a speed boost, space goes up, scroll zooms |
+
+F6 cycles the modes. The camera keeps your mouse look, so nothing ever fights you for control. The bot's rotation is applied to your player entity only for the ticks it needs and your real view is put back immediately after, which is what lets the free camera and the bot coexist.
+
+It is gated off during `/macro attack` and `/macro kill`. An attack forces the mode back to `off`, and both the keybind and the command refuse to re-enable it while combat is running, because chasing a target needs your actual view. The gate lifts on `/macro combatstop`.
 
 ---
 
