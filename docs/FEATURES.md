@@ -108,6 +108,8 @@ Each target is its own argument, up to four, so completion keeps working after t
 | `spam` *(default)* | Hits on an interval, configurable via `/macro attack set spaminterval <ms>` |
 | `crit` | Jumps and strikes partway down the fall for the critical |
 
+Both the mode and the interval are remembered between launches, as are `/macro set smoothlook` and `/macro set botview`. They live in `mods/macros/settings.properties` next to your macro files.
+
 > The bot always faces its target and closes to within 4.45 blocks before swinging, in both modes. Outside that range it keeps walking toward the target and swings as soon as it is back in range. In `crit` mode each attempt is a jump followed by a strike once the player is about halfway down the fall, since striking at the apex happens before any fall distance has accumulated and the critical does not register. If the target backs out of range mid jump the strike is skipped and the bot walks in again.
 
 > Attacking, following, and pathfinding are mutually exclusive. Starting one stops the others.

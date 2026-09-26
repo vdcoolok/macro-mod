@@ -75,8 +75,14 @@ public class MacroParser {
 
             case "attack", "kill" -> parseAttack(t, actions);
             case "follow" -> {
-                if (t.size() < 2) throw new IllegalArgumentException("follow needs a mob or player name");
-                actions.add(MacroAction.follow(joinFrom(t, 1)));
+                boolean onlyFollow = t.size() > 1 && t.get(1).toLowerCase(Locale.ROOT).equals("only");
+                int start = onlyFollow ? 2 : 1;
+                if (t.size() <= start) {
+                    throw new IllegalArgumentException(onlyFollow
+                        ? "follow only needs an entity id"
+                        : "follow needs a mob or player name");
+                }
+                actions.add(MacroAction.follow(joinFrom(t, start), onlyFollow));
             }
             case "combatstop", "stopcombat", "stopattack", "unfollow" ->
                 actions.add(MacroAction.combatStop());
@@ -129,7 +135,7 @@ public class MacroParser {
     }
 
     private static void parseAttack(List<String> t, List<MacroAction> actions) {
-        if (t.size() < 2) throw new IllegalArgumentException("attack needs hostile, mobs, or mob names");
+        if (t.size() < 2) throw new IllegalArgumentException("attack needs hostile, passive, all, only, or mob names");
         String first = t.get(1).toLowerCase(Locale.ROOT);
         if (first.equals("hostile")) {
             actions.add(MacroAction.attack(true, List.of()));
@@ -143,13 +149,19 @@ public class MacroParser {
             actions.add(MacroAction.attack(false, List.of()));
             return;
         }
+        boolean only = first.equals("only");
+        int start = only ? 2 : 1;
         List<String> filters = new ArrayList<>();
-        for (int i = 1; i < t.size(); i++) {
+        for (int i = start; i < t.size(); i++) {
             String name = t.get(i).toLowerCase(Locale.ROOT);
             if (!name.isBlank()) filters.add(name);
         }
-        if (filters.isEmpty()) throw new IllegalArgumentException("attack needs at least one mob name");
-        actions.add(MacroAction.attack(false, filters));
+        if (filters.isEmpty()) {
+            throw new IllegalArgumentException(only
+                ? "attack only needs at least one entity id"
+                : "attack needs at least one mob name");
+        }
+        actions.add(MacroAction.attack(false, filters, only));
     }
 
     private static MacroAction parsePathfindFromCurrent() {

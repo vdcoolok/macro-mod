@@ -166,13 +166,13 @@ public class MacroExecutor {
                 }
                 case ATTACK -> {
                     FollowController.stop();
-                    CombatController.start(a.hostileOnly, a.messages);
+                    CombatController.start(a.hostileOnly, a.messages, a.exactOnly);
                     index++;
                     return;
                 }
                 case FOLLOW -> {
                     CombatController.stop();
-                    FollowController.start(a.target);
+                    FollowController.start(a.target, a.exactOnly);
                     index++;
                     return;
                 }

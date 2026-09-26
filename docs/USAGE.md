@@ -139,6 +139,8 @@ The folder is created on the first `/macro` run. Files can also be edited with a
 | `combatstop` | Stops attack/follow |
 
 > In a macro file, `attack`/`follow` start their routine and the macro continues with the next actions. The routine runs independently each tick. End it later with `combatstop`, or `/macro stop` to stop everything.
+>
+> Attack mode, hit interval, smooth looking and server view body are saved automatically and restored on launch. The file is `mods/macros/settings.properties`, edit or delete it to reset.
 
 The bot always looks at its target and closes to within 4.45 blocks before swinging. Outside that it keeps walking toward the target and swings as soon as it gets back in range. In `crit` mode it jumps to start each attempt and swings partway down the fall, which is what actually registers the crit. If the target backs out of range mid jump, the swing is skipped and it walks in again.
 

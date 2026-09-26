@@ -322,13 +322,13 @@ public class MacroCommand {
     }
 
     private static int setSmoothLook(FabricClientCommandSource source, boolean enabled) {
-        com.example.macromod.path.render.RotationController.setSmoothLookEnabled(enabled);
+        ModSettings.setSmoothLook(enabled);
         source.sendFeedback(Component.literal("§aSmooth looking: §f" + (enabled ? "on" : "off")));
         return 1;
     }
 
     private static int setBotView(FabricClientCommandSource source, boolean enabled) {
-        com.example.macromod.path.render.RotationController.setBotViewEnabled(enabled);
+        ModSettings.setBotView(enabled);
         source.sendFeedback(Component.literal("§aServer view body: §f" + (enabled ? "on" : "off")));
         return 1;
     }
@@ -372,12 +372,12 @@ public class MacroCommand {
         String lower = modeName.toLowerCase(Locale.ROOT);
         switch (lower) {
             case "spam" -> {
-                CombatController.setMode(CombatController.AttackMode.SPAM);
+                ModSettings.setAttackMode(CombatController.AttackMode.SPAM);
                 source.sendFeedback(Component.literal("§aAttack mode: §fspam"));
                 return 1;
             }
             case "crit" -> {
-                CombatController.setMode(CombatController.AttackMode.CRIT);
+                ModSettings.setAttackMode(CombatController.AttackMode.CRIT);
                 source.sendFeedback(Component.literal("§aAttack mode: §fcrit"));
                 return 1;
             }
@@ -389,7 +389,7 @@ public class MacroCommand {
     }
 
     private static int setSpamInterval(FabricClientCommandSource source, int ms) {
-        CombatController.setSpamInterval(ms);
+        ModSettings.setSpamInterval(ms);
         source.sendFeedback(Component.literal("§aSpam interval: §f" + CombatController.getSpamInterval() + "ms"));
         return 1;
     }

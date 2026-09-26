@@ -23,6 +23,7 @@ public class MacroMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         System.out.println("[MacroMod] Initializing for Minecraft 26.2...");
+        ModSettings.load();
         MacroCommand.register();
         CachedWorld.get();
 

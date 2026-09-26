@@ -34,6 +34,7 @@ public class MacroAction {
     public boolean bindIsCycle;
     public boolean nolookLocked;
     public boolean hostileOnly;
+    public boolean exactOnly;
 
     public static MacroAction keyHold(String k)     { MacroAction a = new MacroAction(); a.type = Type.KEY_HOLD; a.target = k; return a; }
     public static MacroAction keyRelease(String k)  { MacroAction a = new MacroAction(); a.type = Type.KEY_RELEASE; a.target = k; return a; }
@@ -79,16 +80,26 @@ public class MacroAction {
     }
 
     public static MacroAction attack(boolean hostile, List<String> filters) {
+        return attack(hostile, filters, false);
+    }
+
+    public static MacroAction attack(boolean hostile, List<String> filters, boolean only) {
         MacroAction a = new MacroAction();
         a.type = Type.ATTACK;
         a.hostileOnly = hostile;
+        a.exactOnly = only;
         a.messages = filters;
         return a;
     }
 
     public static MacroAction follow(String name) {
+        return follow(name, false);
+    }
+
+    public static MacroAction follow(String name, boolean only) {
         MacroAction a = new MacroAction();
         a.type = Type.FOLLOW;
+        a.exactOnly = only;
         a.target = name;
         return a;
     }
