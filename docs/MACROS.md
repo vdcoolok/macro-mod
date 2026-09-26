@@ -34,6 +34,8 @@ This page lists every action prefix you can use in a macro file. Full command de
 |---|---|
 | `look at` | `look at "yaw / pitch"` (alias `look yaw pitch`) |
 | `lookhere` | `lookhere` |
+| `smoothlookat` | `smoothlookat "yaw / pitch"` (aliases `smoothlook`, `smooth_look`, `lookatsmooth`) |
+| `smoothlookhere` | `smoothlookhere` |
 | `auto look` | `auto look "yaw / pitch"` (alias `snap look`) |
 
 ### Combat
@@ -77,6 +79,12 @@ This page lists every action prefix you can use in a macro file. Full command de
 | `endloop` | `endloop` |
 
 ---
+
+## Smooth Looking
+
+`look at` snaps the view instantly. `smoothlookat` turns the head toward the target over a few ticks instead, and the macro waits for the turn to finish before continuing.
+
+Pathing head turning follows the global setting: `/macro set smoothlook true` turns smoothing on for every automatic head movement, `/macro set smoothlook false` turns it off. Smoothing is on by default. `auto look` and `auto lookhere` are always instant, because they exist to correct drift immediately.
 
 ## Values
 

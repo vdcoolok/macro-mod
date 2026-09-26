@@ -10,6 +10,8 @@ import net.minecraft.core.BlockPos;
 
 public class PathExecutor {
 
+    private static final int FINE_APPROACH_MAX_TICKS = 20;
+
     private Path currentPath;
     private final Goal goal;
     private boolean recalculationNeeded = false;
@@ -33,8 +35,21 @@ public class PathExecutor {
                 double dz = gb.getExactZ() - p.getZ();
                 double dist = Math.sqrt(dx * dx + dz * dz);
 
+                if (dist <= 0.35) {
+                    ctx.releaseAllInputs();
+                    return true;
+                }
+
                 fineTicks++;
-                if (dist <= 0.03 || fineTicks > 30) {
+                if (fineTicks > FINE_APPROACH_MAX_TICKS) {
+                    System.out.println("[MacroMod] Goal position not reached exactly ("
+                        + String.format("%.2f", dist) + " blocks away), stopping pathing");
+                    ctx.releaseAllInputs();
+                    return true;
+                }
+
+                if (!fineApproachClear(ctx, p, gb)) {
+                    System.out.println("[MacroMod] Final approach to goal is blocked, stopping pathing");
                     ctx.releaseAllInputs();
                     return true;
                 }
@@ -44,7 +59,7 @@ public class PathExecutor {
                 ctx.setInput("jump", false);
                 ctx.setInput("back", false);
                 ctx.setInput("forward", true);
-                if (dist <= 0.25) {
+                if (dist <= 0.6) {
                     ctx.setInput("sneak", true);
                 } else {
                     ctx.setInput("sneak", false);
@@ -93,6 +108,18 @@ public class PathExecutor {
         }
 
         return false;
+    }
+
+    private boolean fineApproachClear(CalculationContext ctx, LocalPlayer p, GoalBlock gb) {
+        double dx = gb.getExactX() - p.getX();
+        double dz = gb.getExactZ() - p.getZ();
+        int blockX = (int) Math.floor(p.getX() + dx * 0.25);
+        int blockZ = (int) Math.floor(p.getZ() + dz * 0.25);
+        int feetY = p.blockPosition().getY();
+
+        if (!ctx.isPassable(blockX, feetY, blockZ)) return false;
+        if (!ctx.isPassable(blockX, feetY + 1, blockZ)) return false;
+        return true;
     }
 
     private int shouldSkipAhead(CalculationContext ctx) {

@@ -7,7 +7,7 @@ public class MacroAction {
     public enum Type {
         KEY_HOLD, KEY_RELEASE, KEY_PRESS,
         MOUSE_HOLD, MOUSE_RELEASE, MOUSE_CLICK,
-        GOTO, LOOK, WAIT,
+        GOTO, LOOK, WAIT, SMOOTH_LOOK,
         LOOP_START, LOOP_END,
         SNAP_GOTO, SNAP_LOOK,
         CHAT, CMD,
@@ -43,6 +43,7 @@ public class MacroAction {
     public static MacroAction mouseClick(String b)  { MacroAction a = new MacroAction(); a.type = Type.MOUSE_CLICK; a.target = b; return a; }
     public static MacroAction gotoPos(double x, double y, double z) { MacroAction a = new MacroAction(); a.type = Type.GOTO; a.x = x; a.y = y; a.z = z; return a; }
     public static MacroAction look(float yaw, float pitch) { MacroAction a = new MacroAction(); a.type = Type.LOOK; a.yaw = yaw; a.pitch = pitch; return a; }
+    public static MacroAction smoothLook(float yaw, float pitch) { MacroAction a = new MacroAction(); a.type = Type.SMOOTH_LOOK; a.yaw = yaw; a.pitch = pitch; return a; }
     public static MacroAction delay(long ms)        { MacroAction a = new MacroAction(); a.type = Type.WAIT; a.waitMs = ms; return a; }
     public static MacroAction loopStart(int c)      { MacroAction a = new MacroAction(); a.type = Type.LOOP_START; a.loopCount = c; return a; }
     public static MacroAction loopEnd()             { MacroAction a = new MacroAction(); a.type = Type.LOOP_END; return a; }

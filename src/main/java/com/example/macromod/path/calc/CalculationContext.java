@@ -63,20 +63,18 @@ public class CalculationContext implements ActionCosts {
 
     public boolean canFitThroughDiagonal(int x, int y, int z, int dx, int dz) {
         if (dx == 0 || dz == 0) return true;
-        boolean sideX = isPassable(x + dx, y, z)
-                     && isPassable(x + dx, y + 1, z);
-        boolean sideZ = isPassable(x, y, z + dz)
-                     && isPassable(x, y + 1, z + dz);
-        return sideX || sideZ;
+        return diagonalSidesClear(x, y, z, dx, dz);
     }
 
     public boolean canExitDiagonal(int destX, int y, int destZ, int dx, int dz) {
         if (dx == 0 || dz == 0) return true;
-        boolean sideX = isPassable(destX - dx, y, destZ)
-                     && isPassable(destX - dx, y + 1, destZ);
-        boolean sideZ = isPassable(destX, y, destZ - dz)
-                     && isPassable(destX, y + 1, destZ - dz);
-        return sideX || sideZ;
+        return diagonalSidesClear(destX, y, destZ, -dx, -dz);
+    }
+
+    private boolean diagonalSidesClear(int x, int y, int z, int dx, int dz) {
+        if (!isPassable(x + dx, y, z) || !isPassable(x + dx, y + 1, z)) return false;
+        if (!isPassable(x, y, z + dz) || !isPassable(x, y + 1, z + dz)) return false;
+        return true;
     }
 
     public boolean canBreak(BlockPos pos) {
@@ -268,7 +266,7 @@ public class CalculationContext implements ActionCosts {
         double horizontal = Math.sqrt(dx * dx + dz * dz);
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontal));
-        RotationController.setTarget(yaw, pitch);
+        RotationController.setAdaptiveTarget(yaw, pitch);
     }
 
     public void lookAtDirect(double x, double y, double z) {

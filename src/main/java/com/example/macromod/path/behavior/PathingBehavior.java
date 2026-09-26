@@ -31,6 +31,7 @@ public class PathingBehavior {
     private static final long RECALC_INTERVAL_MS = 5000;
     private static final long EXPLORE_RECALC_INTERVAL_MS = 1500;
     private static final double SWAP_MARGIN = 0.95;
+    private static final double NEAR_GOAL_COST = 12.0;
     private static final int EXPLORE_CHUNK_MARGIN = 2;
 
     private Goal currentGoal;
@@ -92,6 +93,7 @@ public class PathingBehavior {
 
     public void stop() {
         if (context != null) context.releaseAllInputs();
+        com.example.macromod.path.render.RotationController.reset();
         NolookController.setMode(NolookController.Mode.NONE);
         currentGoal = null;
         activeGoal = null;
@@ -310,6 +312,8 @@ public class PathingBehavior {
 
         long now = System.currentTimeMillis();
         long interval = exploring ? EXPLORE_RECALC_INTERVAL_MS : RECALC_INTERVAL_MS;
+        Path remaining = executor.getPath();
+        if (remaining != null && remaining.getRemainingCost() < NEAR_GOAL_COST) interval = 3000;
         if (!calculating && now - lastRecalc > interval) {
             lastRecalc = now;
             startCalculation();

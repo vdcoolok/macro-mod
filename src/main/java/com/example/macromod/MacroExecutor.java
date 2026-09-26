@@ -59,6 +59,7 @@ public class MacroExecutor {
         CombatController.stop();
         FollowController.stop();
         PathingBehavior.get().stop();
+        com.example.macromod.path.render.RotationController.reset();
         releaseAllKeys();
     }
 
@@ -107,6 +108,10 @@ public class MacroExecutor {
                 case LOOK -> {
                     client.player.setYRot(a.yaw);
                     client.player.setXRot(a.pitch);
+                }
+                case SMOOTH_LOOK -> {
+                    com.example.macromod.path.render.RotationController.setForcedSmoothTarget(a.yaw, a.pitch);
+                    if (com.example.macromod.path.render.RotationController.isSettling()) return;
                 }
                 case WAIT -> waitUntil = System.currentTimeMillis() + a.waitMs;
                 case LOOP_START -> loopStack.push(new int[]{index, a.loopCount});

@@ -83,6 +83,7 @@ public class MacroParser {
 
             case "snap", "auto" -> parseSnapOrAuto(t, actions);
             case "look" -> parseLook(t, actions);
+            case "smoothlookat", "smoothlook", "smooth_look", "lookatsmooth" -> parseSmoothLook(t, actions);
             case "lookhere" -> actions.add(parseLookFromCurrent());
 
             case "hold" -> {
@@ -187,6 +188,13 @@ public class MacroParser {
         List<String> rest = t.subList(1, t.size());
         if (!rest.isEmpty() && rest.get(0).equalsIgnoreCase("at")) rest = rest.subList(1, rest.size());
         out.add(parseLookAction(rest));
+    }
+
+    private static void parseSmoothLook(List<String> t, List<MacroAction> out) {
+        List<String> rest = t.subList(1, t.size());
+        if (!rest.isEmpty() && rest.get(0).equalsIgnoreCase("at")) rest = rest.subList(1, rest.size());
+        float[] l = parseLookValues(rest);
+        out.add(MacroAction.smoothLook(l[0], l[1]));
     }
 
     private static MacroAction parseLookAction(List<String> parts) {

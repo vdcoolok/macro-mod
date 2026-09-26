@@ -58,6 +58,19 @@ public class MacroCommand {
                 .then(ClientCommands.literal("save")
                     .executes(ctx -> saveEdit(ctx.getSource())))
 
+                .then(ClientCommands.literal("set")
+                    .executes(ctx -> {
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set <smoothlook> <true|false>"));
+                        return 0;
+                    })
+                    .then(ClientCommands.literal("smoothlook")
+                        .then(ClientCommands.literal("true")
+                            .executes(ctx -> setSmoothLook(ctx.getSource(), true)))
+                        .then(ClientCommands.literal("false")
+                            .executes(ctx -> setSmoothLook(ctx.getSource(), false)))
+                    )
+                )
+
                 .then(ClientCommands.literal("action")
                     .executes(ctx -> {
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro action <add|remove|list|move>"));
@@ -263,6 +276,12 @@ public class MacroCommand {
         });
     }
 
+    private static int setSmoothLook(FabricClientCommandSource source, boolean enabled) {
+        com.example.macromod.path.render.RotationController.setSmoothLookEnabled(enabled);
+        source.sendFeedback(Component.literal("§aSmooth looking: §f" + (enabled ? "on" : "off")));
+        return 1;
+    }
+
     private static int pathTo(FabricClientCommandSource source, double x, double y, double z) {
         PathingBehavior.get().setGoal(new GoalBlock(x, y, z));
         source.sendFeedback(Component.literal(
@@ -405,6 +424,7 @@ public class MacroCommand {
         final String[] names = {
             "autogotohere", "autolookhere",
             "gotohere", "lookhere",
+            "smoothlookat", "smoothlookhere",
             "autogoto", "autolook",
             "snapgotohere", "snaplookhere",
             "snapgoto", "snaplook",
@@ -448,6 +468,7 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro attack set spaminterval <ms> §7— set hit interval"));
         source.sendFeedback(Component.literal("§f/macro follow <name> §7— follow a mob or player"));
         source.sendFeedback(Component.literal("§f/macro combatstop §7— stop attack/follow routines"));
+        source.sendFeedback(Component.literal("§f/macro set smoothlook <true|false> §7— smooth all head turning"));
         source.sendFeedback(Component.literal("§f/macro pathdebug walk <x> <y> <z> §7— pathfind to a coord"));
         source.sendFeedback(Component.literal("§f/macro pathdebug pathxz <x> <z> §7— pathfind to XZ"));
         source.sendFeedback(Component.literal("§f/macro pathdebug stop §7— stop pathing"));
@@ -656,6 +677,13 @@ public class MacroCommand {
                 if (r.toLowerCase(Locale.ROOT).startsWith("at ")) r = r.substring(3);
                 return "look at \"" + resolveDirection(r, client) + "\"";
             }
+            case "smoothlookat", "smoothlook", "smooth_look", "lookatsmooth": {
+                String r = rest;
+                if (r.toLowerCase(Locale.ROOT).startsWith("at ")) r = r.substring(3);
+                return "smoothlookat \"" + resolveDirection(r, client) + "\"";
+            }
+            case "smoothlookhere":
+                return "smoothlookat \"" + currentLook(client) + "\"";
             case "hold", "release", "press":
                 return cmd + " " + requireToken(rest, cmd);
             case "click": {
