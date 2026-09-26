@@ -78,11 +78,15 @@ If the goal lies in ungenerated chunks, the bot walks a straight line toward it 
 
 | Selector | Matches |
 |---|---|
-| `only` | Restricts the routine to exactly the listed targets, no fuzzy matching. Always pair it with names |
+| `only` | Restricts the routine to exactly the listed targets, no fuzzy matching. The only place the full mob list is suggested |
 | `hostile` | Anything extending `Monster`, so modded hostile mobs work without a hardcoded list |
-| `mobs` | Any living entity |
+| `passive` | Anything that is not a `Monster` |
+| `all` | Any living entity, the same as bare `/macro attack` |
+| `set` | Configures attack mode and interval, not a target |
 | `namespace:id` | Exact entity type. `minecraft:zombie`, `minecraft:skeleton`, `minecraft:cow` |
 | Names | Fuzzy matched (substring or up to 2 edits). `zom` matches zombie, `irongole` matches iron_golem |
+
+`/macro attack` suggests only `set`, `passive`, `hostile`, `all` and `only`. The mob list lives entirely under `only`.
 
 ```
 /macro attack

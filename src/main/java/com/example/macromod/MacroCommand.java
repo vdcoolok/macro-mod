@@ -235,7 +235,7 @@ public class MacroCommand {
                         return 0;
                     })
                     .then(ClientCommands.literal("only")
-                        .then(ClientCommands.argument("onlyFollowTarget", StringArgumentType.string())
+                        .then(ClientCommands.argument("onlyFollowTarget", RawWordArgument.rawWord())
                             .suggests(entityIdSuggestions())
                             .executes(ctx -> startFollow(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "onlyFollowTarget"), true))))
@@ -264,7 +264,7 @@ public class MacroCommand {
                 .executes(ctx -> startAttack(ctx.getSource(), true, List.of(), false)))
             .then(ClientCommands.literal("passive")
                 .executes(ctx -> startAttack(ctx.getSource(), false, List.of(TargetRegistry.PASSIVE_TOKEN), false)))
-            .then(ClientCommands.literal("mobs")
+            .then(ClientCommands.literal("all")
                 .executes(ctx -> startAttack(ctx.getSource(), false, List.of(), false)))
             .then(ClientCommands.literal("only")
                 .executes(ctx -> {
@@ -300,8 +300,8 @@ public class MacroCommand {
             String prefix, int index, boolean only) {
         String argName = prefix + index;
         RequiredArgumentBuilder<FabricClientCommandSource, String> node = ClientCommands
-            .argument(argName, StringArgumentType.string())
-            .suggests(only ? entityIdSuggestions() : mobNameSuggestions())
+            .argument(argName, RawWordArgument.rawWord())
+            .suggests(only ? entityIdSuggestions() : literalSuggestions())
             .executes(ctx -> startAttack(ctx.getSource(), false,
                 collectTargets(ctx, prefix, index), only));
 
@@ -420,26 +420,11 @@ public class MacroCommand {
         return names;
     }
 
-    private static SuggestionProvider<FabricClientCommandSource> mobNameSuggestions() {
+    private static SuggestionProvider<FabricClientCommandSource> literalSuggestions() {
         return (ctx, builder) -> {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
-            java.util.Set<String> seen = new java.util.HashSet<>();
-
-            for (String literal : List.of("hostile", "passive", "mobs", "only")) {
-                if (literal.startsWith(remaining)) {
-                    builder.suggest(literal);
-                    seen.add(literal);
-                }
-            }
-
-            Minecraft client = Minecraft.getInstance();
-            if (client.level != null && client.player != null) {
-                for (var e : client.level.entitiesForRendering()) {
-                    if (!(e instanceof net.minecraft.world.entity.LivingEntity)) continue;
-                    if (e.getId() == client.player.getId()) continue;
-                    String name = com.example.macromod.TargetRegistry.shortName(e.getType());
-                    if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
-                }
+            for (String literal : List.of("set", "passive", "hostile", "all", "only")) {
+                if (literal.startsWith(remaining)) builder.suggest(literal);
             }
             return builder.buildFuture();
         };
@@ -547,7 +532,7 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro action remove <n> §7— remove action N"));
         source.sendFeedback(Component.literal("§f/macro action list §7— list all actions"));
         source.sendFeedback(Component.literal("§f/macro action move <from> <to> §7— move an action"));
-        source.sendFeedback(Component.literal("§f/macro attack <hostile|passive|mobs|namespace:id...> §7— hunt and attack mobs"));
+        source.sendFeedback(Component.literal("§f/macro attack <set|passive|hostile|all|only> §7— hunt and attack mobs"));
         source.sendFeedback(Component.literal("  §7alias: §fmacro kill §7— identical to §fmacro attack"));
         source.sendFeedback(Component.literal("§f/macro attack set attackmode <spam|crit> §7— choose attack style"));
         source.sendFeedback(Component.literal("§f/macro attack set spaminterval <ms> §7— set hit interval"));
