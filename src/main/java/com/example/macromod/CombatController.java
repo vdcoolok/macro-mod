@@ -31,6 +31,7 @@ public final class CombatController {
 
     private static boolean active = false;
     private static boolean hostileOnly = false;
+    private static boolean exactOnly = false;
     private static final List<String> nameFilters = new ArrayList<>();
 
     private static AttackMode mode = AttackMode.SPAM;
@@ -46,7 +47,12 @@ public final class CombatController {
     private CombatController() {}
 
     public static void start(boolean hostile, List<String> filters) {
+        start(hostile, filters, false);
+    }
+
+    public static void start(boolean hostile, List<String> filters, boolean only) {
         hostileOnly = hostile;
+        exactOnly = only;
         nameFilters.clear();
         if (filters != null) {
             for (String f : filters) {
@@ -68,6 +74,7 @@ public final class CombatController {
         lastGoal = null;
         nameFilters.clear();
         hostileOnly = false;
+        exactOnly = false;
         critJumpQueued = false;
         critPeakY = 0.0;
         PathingBehavior.get().stop();
@@ -247,6 +254,12 @@ public final class CombatController {
         String translationKey = type.getDescriptionId();
 
         for (String filter : nameFilters) {
+            EntityType<?> resolved = TargetRegistry.resolveId(filter);
+            if (resolved != null) {
+                if (resolved == type) return true;
+                continue;
+            }
+            if (exactOnly) continue;
             if (FuzzyMatcher.matches(filter, shortName)) return true;
             if (FuzzyMatcher.matches(filter, translationKey)) return true;
         }

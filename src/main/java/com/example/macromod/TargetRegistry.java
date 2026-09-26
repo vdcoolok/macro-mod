@@ -8,9 +8,11 @@ import net.minecraft.world.entity.monster.Monster;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -20,7 +22,8 @@ public final class TargetRegistry {
 
     private static final Set<EntityType<?>> hostile = new HashSet<>();
     private static final Set<EntityType<?>> passive = new HashSet<>();
-    private static final List<String> mobs = new ArrayList<>();
+    private static final List<String> mobIds = new ArrayList<>();
+    private static final Map<String, EntityType<?>> byId = new HashMap<>();
     private static boolean initialized = false;
 
     private TargetRegistry() {}
@@ -61,18 +64,40 @@ public final class TargetRegistry {
         return type.toShortString().toLowerCase(Locale.ROOT);
     }
 
-    public static synchronized List<String> mobNames() {
-        if (mobs.isEmpty()) {
-            Set<String> names = new TreeSet<>();
+    public static synchronized List<String> mobIds() {
+        if (mobIds.isEmpty()) {
+            Set<String> ids = new TreeSet<>();
             for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
                 if (!isMob(type)) continue;
-                String name = type.toShortString().toLowerCase(Locale.ROOT);
-                if (name == null || name.isBlank()) continue;
-                names.add(name);
+                ids.add(id(type));
             }
-            mobs.addAll(names);
+            mobIds.addAll(ids);
         }
-        return Collections.unmodifiableList(mobs);
+        return Collections.unmodifiableList(mobIds);
+    }
+
+    public static String id(EntityType<?> type) {
+        return EntityType.getKey(type).toString();
+    }
+
+    public static EntityType<?> resolveId(String token) {
+        if (token == null || token.isBlank()) return null;
+        String key = token.trim().toLowerCase(Locale.ROOT);
+        ensureIds();
+        EntityType<?> match = byId.get(key);
+        if (match != null) return match;
+        if (key.indexOf(':') < 0) {
+            match = byId.get("minecraft:" + key);
+            if (match != null) return match;
+        }
+        return null;
+    }
+
+    private static synchronized void ensureIds() {
+        if (!byId.isEmpty()) return;
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            byId.put(id(type).toLowerCase(Locale.ROOT), type);
+        }
     }
 
     private static boolean isMob(EntityType<?> type) {

@@ -19,6 +19,7 @@ public final class FollowController {
     private static final double MAX_SCAN_RANGE = 128.0;
 
     private static boolean active = false;
+    private static boolean exactOnly = false;
     private static final List<String> nameFilters = new ArrayList<>();
     private static UUID targetId;
 
@@ -29,6 +30,11 @@ public final class FollowController {
     private FollowController() {}
 
     public static void start(String name) {
+        start(name, false);
+    }
+
+    public static void start(String name, boolean only) {
+        exactOnly = only;
         nameFilters.clear();
         if (name != null && !name.isBlank()) {
             nameFilters.add(name.trim().toLowerCase(Locale.ROOT));
@@ -42,6 +48,7 @@ public final class FollowController {
 
     public static void stop() {
         active = false;
+        exactOnly = false;
         target = null;
         targetId = null;
         nameFilters.clear();
@@ -140,6 +147,12 @@ public final class FollowController {
             : null;
 
         for (String filter : nameFilters) {
+            var resolved = TargetRegistry.resolveId(filter);
+            if (resolved != null) {
+                if (resolved == entity.getType()) return true;
+                continue;
+            }
+            if (exactOnly) continue;
             if (FuzzyMatcher.matches(filter, shortName)) return true;
             if (custom != null && FuzzyMatcher.matches(filter, custom)) return true;
         }

@@ -7,6 +7,7 @@ import com.example.macromod.path.goal.GoalBlock;
 import com.example.macromod.path.goal.GoalXZ;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -220,54 +221,24 @@ public class MacroCommand {
                     )
                 )
 
-                .then(ClientCommands.literal("attack")
-                    .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack <hostile|passive|mobs|mob_name...>"));
-                        return 0;
-                    })
-                    .then(ClientCommands.literal("hostile")
-                        .executes(ctx -> startAttack(ctx.getSource(), true, List.of())))
-                    .then(ClientCommands.literal("passive")
-                        .executes(ctx -> startAttack(ctx.getSource(), false, List.of(TargetRegistry.PASSIVE_TOKEN))))
-                    .then(ClientCommands.literal("mobs")
-                        .executes(ctx -> startAttack(ctx.getSource(), false, List.of())))
-                    .then(ClientCommands.literal("set")
-                        .executes(ctx -> {
-                            ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack set <attackmode|spaminterval> <value>"));
-                            return 0;
-                        })
-                        .then(ClientCommands.literal("attackmode")
-                            .then(ClientCommands.argument("mode", StringArgumentType.word())
-                                .suggests((c, b) -> {
-                                    b.suggest("spam");
-                                    b.suggest("crit");
-                                    return b.buildFuture();
-                                })
-                                .executes(ctx -> setAttackMode(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "mode")))))
-                        .then(ClientCommands.literal("spaminterval")
-                            .then(ClientCommands.argument("ms", IntegerArgumentType.integer(50))
-                                .executes(ctx -> setSpamInterval(ctx.getSource(),
-                                    IntegerArgumentType.getInteger(ctx, "ms")))))
-                    )
-                    .then(ClientCommands.argument("mobs", StringArgumentType.greedyString())
-                        .suggests(mobNameSuggestions())
-                        .executes(ctx -> startAttack(ctx.getSource(), false,
-                            splitNames(StringArgumentType.getString(ctx, "mobs")))))
-                )
+                .then(buildAttackCommand("attack"))
 
-                .then(ClientCommands.literal("kill")
-                )
+                .then(buildAttackCommand("kill"))
 
                 .then(ClientCommands.literal("follow")
                     .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro follow <mob_name|player_name>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro follow [only] <namespace:id|mob_name|player_name>"));
                         return 0;
                     })
+                    .then(ClientCommands.literal("only")
+                        .then(ClientCommands.argument("onlyTarget", StringArgumentType.greedyString())
+                            .suggests(followTargetSuggestions())
+                            .executes(ctx -> startFollow(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "onlyTarget"), true))))
                     .then(ClientCommands.argument("target", StringArgumentType.greedyString())
                         .suggests(followTargetSuggestions())
                         .executes(ctx -> startFollow(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "target"))))
+                            StringArgumentType.getString(ctx, "target"), false)))
                 )
 
                 .then(ClientCommands.literal("combatstop")
@@ -280,6 +251,51 @@ public class MacroCommand {
                 )
             );
         });
+    }
+
+    private static LiteralArgumentBuilder<FabricClientCommandSource> buildAttackCommand(String name) {
+        return ClientCommands.literal(name)
+            .executes(ctx -> startAttack(ctx.getSource(), false, List.of(), false))
+            .then(ClientCommands.literal("hostile")
+                .executes(ctx -> startAttack(ctx.getSource(), true, List.of(), false)))
+            .then(ClientCommands.literal("passive")
+                .executes(ctx -> startAttack(ctx.getSource(), false, List.of(TargetRegistry.PASSIVE_TOKEN), false)))
+            .then(ClientCommands.literal("mobs")
+                .executes(ctx -> startAttack(ctx.getSource(), false, List.of(), false)))
+            .then(ClientCommands.literal("only")
+                .executes(ctx -> {
+                    ctx.getSource().sendFeedback(Component.literal(
+                        "§cUsage: /macro " + name + " only <namespace:id...>"));
+                    return 0;
+                })
+                .then(ClientCommands.argument("onlyTargets", StringArgumentType.greedyString())
+                    .suggests(mobNameSuggestions())
+                    .executes(ctx -> startAttack(ctx.getSource(), false,
+                        splitNames(StringArgumentType.getString(ctx, "onlyTargets")), true))))
+            .then(ClientCommands.literal("set")
+                .executes(ctx -> {
+                    ctx.getSource().sendFeedback(Component.literal(
+                        "§cUsage: /macro " + name + " set <attackmode|spaminterval> <value>"));
+                    return 0;
+                })
+                .then(ClientCommands.literal("attackmode")
+                    .then(ClientCommands.argument("mode", StringArgumentType.word())
+                        .suggests((c, b) -> {
+                            b.suggest("spam");
+                            b.suggest("crit");
+                            return b.buildFuture();
+                        })
+                        .executes(ctx -> setAttackMode(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "mode")))))
+                .then(ClientCommands.literal("spaminterval")
+                    .then(ClientCommands.argument("ms", IntegerArgumentType.integer(50))
+                        .executes(ctx -> setSpamInterval(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "ms")))))
+            )
+            .then(ClientCommands.argument("targets", StringArgumentType.greedyString())
+                .suggests(mobNameSuggestions())
+                .executes(ctx -> startAttack(ctx.getSource(), false,
+                    splitNames(StringArgumentType.getString(ctx, "targets")), false)));
     }
 
     private static int setSmoothLook(FabricClientCommandSource source, boolean enabled) {
@@ -302,17 +318,27 @@ public class MacroCommand {
         return 1;
     }
 
-    private static int startAttack(FabricClientCommandSource source, boolean hostile, List<String> filters) {
+    private static int startAttack(FabricClientCommandSource source, boolean hostile, List<String> filters, boolean only) {
         if (Minecraft.getInstance().player == null) {
             source.sendError(Component.literal("§cNot in a world."));
             return 0;
         }
+        if (only) {
+            List<String> unknown = new ArrayList<>();
+            for (String filter : filters) {
+                if (TargetRegistry.resolveId(filter) == null) unknown.add(filter);
+            }
+            if (!unknown.isEmpty()) {
+                source.sendError(Component.literal("§cUnknown entity id: §f" + String.join(", ", unknown)));
+                return 0;
+            }
+        }
         FollowController.stop();
-        CombatController.start(hostile, filters);
+        CombatController.start(hostile, filters, only);
         String targetDesc = hostile ? "hostile mobs"
             : filters.isEmpty() ? "all mobs"
             : filters.equals(List.of(TargetRegistry.PASSIVE_TOKEN)) ? "passive mobs"
-            : String.join(", ", filters);
+            : (only ? "only " : "") + String.join(", ", filters);
         source.sendFeedback(Component.literal("§aAttacking §f" + targetDesc
             + " §7(" + CombatController.getMode() + " mode, "
             + CombatController.getSpamInterval() + "ms interval)"));
@@ -345,14 +371,21 @@ public class MacroCommand {
         return 1;
     }
 
-    private static int startFollow(FabricClientCommandSource source, String target) {
+    private static int startFollow(FabricClientCommandSource source, String target, boolean only) {
         if (Minecraft.getInstance().player == null) {
             source.sendError(Component.literal("§cNot in a world."));
             return 0;
         }
+        if (only) {
+            for (String part : splitNames(target)) {
+                if (TargetRegistry.resolveId(part) == null) continue;
+                target = part;
+                break;
+            }
+        }
         CombatController.stop();
-        FollowController.start(target);
-        source.sendFeedback(Component.literal("§aFollowing §f" + target));
+        FollowController.start(target, only);
+        source.sendFeedback(Component.literal("§aFollowing §f" + target + (only ? " §7(only)" : "")));
         return 1;
     }
 
@@ -386,7 +419,7 @@ public class MacroCommand {
                 }
             }
 
-            for (String name : com.example.macromod.TargetRegistry.mobNames()) {
+            for (String name : com.example.macromod.TargetRegistry.mobIds()) {
                 if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
             }
             return builder.buildFuture();
@@ -407,14 +440,14 @@ public class MacroCommand {
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
             }
-            for (String name : com.example.macromod.TargetRegistry.mobNames()) {
+            for (String name : com.example.macromod.TargetRegistry.mobIds()) {
                 if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
             }
             return builder.buildFuture();
         };
     }
 
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> buildMoveCommand(String name) {
+    private static LiteralArgumentBuilder<FabricClientCommandSource> buildMoveCommand(String name) {
         return ClientCommands.literal(name)
             .then(ClientCommands.argument("from", IntegerArgumentType.integer(1))
                 .suggests(lineNumberSuggestions())
@@ -487,10 +520,11 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro action remove <n> §7— remove action N"));
         source.sendFeedback(Component.literal("§f/macro action list §7— list all actions"));
         source.sendFeedback(Component.literal("§f/macro action move <from> <to> §7— move an action"));
-        source.sendFeedback(Component.literal("§f/macro attack <hostile|passive|mobs|names> §7— hunt and attack mobs"));
+        source.sendFeedback(Component.literal("§f/macro attack <hostile|passive|mobs|namespace:id...> §7— hunt and attack mobs"));
+        source.sendFeedback(Component.literal("  §7alias: §fmacro kill §7— identical to §fmacro attack"));
         source.sendFeedback(Component.literal("§f/macro attack set attackmode <spam|crit> §7— choose attack style"));
         source.sendFeedback(Component.literal("§f/macro attack set spaminterval <ms> §7— set hit interval"));
-        source.sendFeedback(Component.literal("§f/macro follow <name> §7— follow a mob or player"));
+        source.sendFeedback(Component.literal("§f/macro follow <namespace:id|name> §7— follow a mob or player"));
         source.sendFeedback(Component.literal("§f/macro combatstop §7— stop attack/follow routines"));
         source.sendFeedback(Component.literal("§f/macro set smoothlook <true|false> §7— smooth all head turning"));
         source.sendFeedback(Component.literal("§f/macro set botview <true|false> §7— point the body where the server sees it"));

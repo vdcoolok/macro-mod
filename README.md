@@ -80,8 +80,9 @@
 |---|---|
 | `/macro load <name>` | Runs a macro file |
 | `/macro stop` | Stops everything and releases all inputs |
-| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine |
-| `/macro follow <name>` | Follows a mob or player |
+| `/macro attack` | Attacks all mobs |
+| `/macro attack only <namespace:id...>` | Attacks only those, for example `/macro attack only minecraft:zombie` |
+| `/macro follow [only] <name>` | Follows a mob or player |
 | `/macro combatstop` | Stops attack/follow only |
 | `/macro pathdebug walk <x> <y> <z>` | Tests pathfinding to a coordinate |
 

@@ -37,12 +37,20 @@
 
 | Command | Description |
 |---|---|
-| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine, names are fuzzy matched, tab completes mob names |
+| `/macro attack` | Attacks all mobs, no picking required |
+| `/macro attack only <namespace:id...>` | Attacks only those, for example `/macro attack only minecraft:zombie minecraft:skeleton` |
+| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine, bare names are fuzzy matched |
+| `/macro kill <...>` | Identical to `/macro attack` |
 | `/macro attack set attackmode <spam\|crit>` | Selects the attack style |
 | `/macro attack set spaminterval <ms>` | Sets the hit interval for spam mode |
-| `/macro follow <name>` | Follows a mob or player by name, tab completes every mob in the game |
+| `/macro follow <namespace:id\|name>` | Follows a mob or player by exact type or fuzzy name, tab completes every mob in the game |
+| `/macro follow only <namespace:id>` | Follows only that exact entity type |
 | `/macro combatstop` | Stops attack/follow without stopping the macro |
 | `/macro set smoothlook <true\|false>` | Smooths all automatic turning, on by default, `auto look` stays instant. Your own view is never taken over |
+
+> Everything is under `/macro`. There is no `/combat` command, and `/macro attack mobs` targets any living entity while `/macro attack <names>` fuzzy matches the names you give.
+>
+> Put `only` in front of your targets when you want exactly those and nothing else. It skips fuzzy matching, so a name that does not resolve is reported immediately as an unknown entity id rather than quietly matching something else or matching nothing. It works on `/macro follow` too, and bare names are fine: `only zombie skeleton` resolves to `minecraft:zombie minecraft:skeleton`.
 
 ### Pathfinding
 
@@ -121,7 +129,9 @@ The folder is created on the first `/macro` run. Files can also be edited with a
 | `attack mobs` | Kills the closest living entity |
 | `attack passive` | Kills the closest passive mobs |
 | `attack zombie skeleton` | Kills the closest zombie or skeleton (fuzzy names) |
+| `attack only minecraft:zombie minecraft:skeleton` | Kills only those exact entity types |
 | `follow <name>` | Follows a mob or player by name |
+| `follow only minecraft:zombie` | Follows only that exact entity type |
 | `combatstop` | Stops attack/follow |
 
 > In a macro file, `attack`/`follow` start their routine and the macro continues with the next actions. The routine runs independently each tick. End it later with `combatstop`, or `/macro stop` to stop everything.

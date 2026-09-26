@@ -72,22 +72,37 @@ If the goal lies in ungenerated chunks, the bot walks a straight line toward it 
 
 `/macro attack` finds the closest matching entity, paths to it, hits it until it dies, then immediately retargets the next closest match. Runs until stopped.
 
+> Every command lives under `/macro`. There is no `/combat` command.
+
 ### Target Selection
 
 | Selector | Matches |
 |---|---|
+| `only` | Restricts the routine to exactly the listed targets, no fuzzy matching. Always pair it with names |
 | `hostile` | Anything extending `Monster`, so modded hostile mobs work without a hardcoded list |
 | `mobs` | Any living entity |
+| `namespace:id` | Exact entity type. `minecraft:zombie`, `minecraft:skeleton`, `minecraft:cow` |
 | Names | Fuzzy matched (substring or up to 2 edits). `zom` matches zombie, `irongole` matches iron_golem |
+
+```
+/macro attack
+/macro attack only minecraft:zombie
+/macro attack only minecraft:zombie minecraft:skeleton minecraft:cow
+/macro follow only minecraft:zombie
+```
+
+`only` is the readable form. It means attack that and that, nothing else, so a typo can never silently widen the target set, and an unrecognised name is rejected up front instead of turning into a silent no-op later. Names still work with it, `only zombie skeleton` resolves to `minecraft:zombie minecraft:skeleton`.
 
 ### Modes
 
 | Mode | Behavior |
 |---|---|
 | `spam` *(default)* | Hits on an interval, configurable via `/macro attack set spaminterval <ms>` |
-| `crit` | Approaches to 2 or 3 blocks, jumps, strikes mid fall for the critical |
+| `crit` | Jumps and strikes partway down the fall for the critical |
 
-> The bot faces its target while attacking. Attacking, following, and pathfinding are mutually exclusive. Starting one stops the others.
+> The bot always faces its target and closes to within 4.45 blocks before swinging, in both modes. Outside that range it keeps walking toward the target and swings as soon as it is back in range. In `crit` mode each attempt is a jump followed by a strike once the player is about halfway down the fall, since striking at the apex happens before any fall distance has accumulated and the critical does not register. If the target backs out of range mid jump the strike is skipped and the bot walks in again.
+
+> Attacking, following, and pathfinding are mutually exclusive. Starting one stops the others.
 
 ---
 
