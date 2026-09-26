@@ -18,6 +18,7 @@ import java.util.List;
 public class MacroMod implements ClientModInitializer {
 
     private static int cacheTick = 0;
+    private static boolean screenWasOpen = false;
 
     @Override
     public void onInitializeClient() {
@@ -43,6 +44,12 @@ public class MacroMod implements ClientModInitializer {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            boolean screenOpen = client.gui != null && client.gui.screen() != null;
+            if (screenWasOpen && !screenOpen) {
+                MacroExecutor.onScreenClosed(client);
+            }
+            screenWasOpen = screenOpen;
+
             MacroExecutor.tick(client);
             BackgroundInputHandler.tick(client);
             CombatController.tick(client);

@@ -21,7 +21,14 @@ public class ChunkPacker {
 
         for (int lx = 0; lx < 16; lx++) {
             for (int lz = 0; lz < 16; lz++) {
-                for (int y = level.getMinY(); y < level.getMaxY(); y++) {
+                int top;
+                try {
+                    top = Math.min(level.getMaxY() - 1,
+                        chunk.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, lx, lz));
+                } catch (Exception e) {
+                    top = level.getMaxY() - 1;
+                }
+                for (int y = level.getMinY(); y <= top; y++) {
                     pos.set(chunk.getPos().getMinBlockX() + lx, y, chunk.getPos().getMinBlockZ() + lz);
                     BlockState state = chunk.getBlockState(pos);
                     cached.set(lx, y, lz, getPathingBlockType(state, level, pos));
@@ -54,9 +61,7 @@ public class ChunkPacker {
         }
 
         if (state.getBlock() instanceof SnowLayerBlock) {
-            return state.getValue(SnowLayerBlock.LAYERS) <= 3
-                ? PathingBlockType.AIR
-                : PathingBlockType.AVOID;
+            return PathingBlockType.AIR;
         }
 
         if (state.getBlock() instanceof net.minecraft.world.level.block.StairBlock) {

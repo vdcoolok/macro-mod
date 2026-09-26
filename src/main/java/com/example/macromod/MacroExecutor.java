@@ -288,6 +288,22 @@ public class MacroExecutor {
         }
     }
 
+    public static void onScreenClosed(Minecraft client) {
+        if (!isAnyInputForced()) return;
+        if (client.player == null) return;
+
+        for (Map.Entry<String, Boolean> e : keyStates.entrySet()) {
+            if (Boolean.TRUE.equals(e.getValue())) {
+                setKeyState(e.getKey(), true);
+            }
+        }
+        for (Map.Entry<String, Boolean> e : mouseStates.entrySet()) {
+            if (Boolean.TRUE.equals(e.getValue())) {
+                setMouseState(e.getKey(), true);
+            }
+        }
+    }
+
     private static void reapplyActiveStates() {
         Minecraft c = Minecraft.getInstance();
         if (c == null || c.options == null) return;

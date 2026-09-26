@@ -21,11 +21,11 @@ import java.util.PriorityQueue;
 
 public class AStarPathFinder implements ActionCosts {
 
-    private static final int MAX_NODES = 250_000;
-    private static final long PRIMARY_TIMEOUT_MS = 4000;
-    private static final long FAILURE_TIMEOUT_MS = 10_000;
+    private static final int MAX_NODES = 400_000;
+    private static final long PRIMARY_TIMEOUT_MS = 1500;
+    private static final long FAILURE_TIMEOUT_MS = 4000;
     private static final double MIN_PARTIAL_DIST_SQ = 9.0;
-    private static final double HEURISTIC_WEIGHT = 1.0;
+    private static final double HEURISTIC_WEIGHT = 1.35;
 
     private final CalculationContext ctx;
     private final Goal goal;
@@ -39,6 +39,10 @@ public class AStarPathFinder implements ActionCosts {
         this.startZ = startZ;
     }
 
+    private double goalDist(int x, int y, int z) {
+        return goal.heuristic(x, y, z);
+    }
+
     public Path calculate() {
         long startTime = System.currentTimeMillis();
         long primaryTimeout = startTime + PRIMARY_TIMEOUT_MS;
@@ -49,7 +53,7 @@ public class AStarPathFinder implements ActionCosts {
 
         PathNode start = new PathNode(startX, startY, startZ);
         start.cost = 0;
-        start.estimatedCost = goal.heuristic(startX, startY, startZ);
+        start.estimatedCost = goalDist(startX, startY, startZ);
         start.priority = start.estimatedCost;
         openSet.add(start);
         allNodes.put(key(startX, startY, startZ), start);
@@ -110,8 +114,8 @@ public class AStarPathFinder implements ActionCosts {
                     node.parent = current;
                     node.cost = tentativeG;
                     node.movementToReach = m;
-                    node.estimatedCost = goal.heuristic(dest.getX(), dest.getY(), dest.getZ());
-                    node.priority = tentativeG + node.estimatedCost;
+                node.estimatedCost = goalDist(dest.getX(), dest.getY(), dest.getZ());
+                node.priority = tentativeG + node.estimatedCost * HEURISTIC_WEIGHT;
                     openSet.add(node);
                 }
             }

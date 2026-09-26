@@ -82,6 +82,32 @@ public class MacroCommand {
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro pathdebug <status|here|cache|walk|pathto|pathxz|stop>"));
                         return 0;
                     })
+                    .then(ClientCommands.literal("block")
+                        .then(ClientCommands.argument("dx", IntegerArgumentType.integer())
+                            .then(ClientCommands.argument("dy", IntegerArgumentType.integer())
+                                .then(ClientCommands.argument("dz", IntegerArgumentType.integer())
+                                    .executes(ctx -> {
+                                        Minecraft mc = Minecraft.getInstance();
+                                        if (mc.player == null) return 0;
+                                        int x = mc.player.blockPosition().getX() + IntegerArgumentType.getInteger(ctx, "dx");
+                                        int y = mc.player.blockPosition().getY() + IntegerArgumentType.getInteger(ctx, "dy");
+                                        int z = mc.player.blockPosition().getZ() + IntegerArgumentType.getInteger(ctx, "dz");
+                                        com.example.macromod.path.cache.PathingBlockType type =
+                                            PathingBehavior.get().isPathing()
+                                                ? null : null;
+                                        var packed = com.example.macromod.path.cache.CachedWorld.get().getChunk(x >> 4, z >> 4);
+                                        if (packed == null || !packed.isLoaded()) {
+                                            ctx.getSource().sendFeedback(Component.literal(
+                                                "§6[Path] §cChunk not packed yet"));
+                                            return 0;
+                                        }
+                                        var t = packed.get(x & 15, y, z & 15);
+                                        var state = mc.level.getBlockState(new net.minecraft.core.BlockPos(x, y, z));
+                                        ctx.getSource().sendFeedback(Component.literal(
+                                            "§6[Path] §fBlock §e" + x + " " + y + " " + z + "§7: §e" + t
+                                            + " §7(§f" + state.getBlock() + "§7)"));
+                                        return 1;
+                                    })))))
                     .then(ClientCommands.literal("status")
                         .executes(ctx -> {
                             var pb = PathingBehavior.get();
