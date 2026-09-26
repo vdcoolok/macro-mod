@@ -42,7 +42,7 @@
 | `/macro attack set spaminterval <ms>` | Sets the hit interval for spam mode |
 | `/macro follow <name>` | Follows a mob or player by name |
 | `/macro combatstop` | Stops attack/follow without stopping the macro |
-| `/macro set smoothlook <true\|false>` | Smooths all automatic head turning, on by default, `auto look` stays instant |
+| `/macro set smoothlook <true\|false>` | Smooths all automatic turning, on by default, `auto look` stays instant. Your own view is never taken over |
 
 ### Pathfinding
 
@@ -106,8 +106,8 @@ The folder is created on the first `/macro` run. Files can also be edited with a
 |---|---|
 | `look at "153.5 / 14.2"` | Sets the view once. Also accepts `look 153.5 14.2` without the slash |
 | `lookhere` | Records your current view |
-| `smoothlookat "153.5 / 14.2"` | Turns the head toward the angle smoothly and waits until it arrives |
-| `smoothlookhere` | Smoothly returns the head to your current view |
+| `smoothlookat "153.5 / 14.2"` | Turns the bot toward the angle smoothly and waits until it arrives, your view stays free |
+| `smoothlookhere` | Smoothly turns the bot back to your current view |
 | `auto look "153.5 / 14.2"` | Look lock, snaps back when the view drifts |
 
 > **Yaw:** `0` = south (+Z) · `90` = west (−X) · `180` = north (−Z) · `-90` = east (+X)

@@ -1,31 +1,38 @@
 package com.example.macromod.path.render;
 
-import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
 
 public final class RotationController {
 
     private static final float MAX_YAW_STEP = 22.0f;
     private static final float MAX_PITCH_STEP = 14.0f;
+    private static final float REACHED_EPS = 0.1f;
 
     private static float targetYaw = 0f;
     private static float targetPitch = 0f;
-    private static float bodyYaw = 0f;
-    private static float bodyPitch = 0f;
     private static boolean hasTarget = false;
-    private static boolean hasBody = false;
-    private static boolean smoothing = false;
     private static boolean smoothRequested = false;
-    private static boolean smoothLookEnabled = true;
+
+    private static float botYaw = 0f;
+    private static float botPitch = 0f;
+    private static boolean hasBot = false;
+    private static boolean smoothing = false;
 
     private static boolean saved = false;
     private static float savedYaw = 0f;
     private static float savedPitch = 0f;
 
+    private static boolean moveSaved = false;
+    private static float moveYaw = 0f;
+    private static float movePitch = 0f;
+
     private static float cameraYaw = 0f;
     private static float cameraPitch = 0f;
     private static boolean hasCamera = false;
+
+    private static boolean smoothLookEnabled = true;
 
     private RotationController() {}
 
@@ -54,11 +61,6 @@ public final class RotationController {
         targetPitch = clampPitch(pitch);
         smoothRequested = forceSmooth || smooth;
         hasTarget = true;
-        if (hasBody && !smoothRequested) {
-            bodyYaw = targetYaw;
-            bodyPitch = targetPitch;
-            smoothing = false;
-        }
     }
 
     public static void applyBeforeTick() {
@@ -66,60 +68,55 @@ public final class RotationController {
         if (p == null) return;
 
         captureCamera(p);
-
-        if (!hasBody) {
-            bodyYaw = p.getYRot();
-            bodyPitch = p.getXRot();
-            hasBody = true;
-        }
-
-        if (hasTarget) {
-            if (!smoothRequested) {
-                bodyYaw = targetYaw;
-                bodyPitch = targetPitch;
-                smoothing = false;
-            } else if (!smoothing && !atTarget()) {
-                smoothing = true;
-            }
-            hasTarget = false;
-        }
-
-        if (smoothing) {
-            bodyYaw = stepAngle(bodyYaw, targetYaw, MAX_YAW_STEP);
-            bodyPitch = step(bodyPitch, targetPitch, MAX_PITCH_STEP);
-            if (atTarget()) smoothing = false;
-        }
-
-        if (!saved) {
-            savedYaw = p.getYRot();
-            savedPitch = p.getXRot();
-            saved = true;
-        }
-
-        p.setYRot(bodyYaw);
-        p.setXRot(bodyPitch);
+        resolve(p);
+        save(p);
+        p.setYRot(botYaw);
+        p.setXRot(botPitch);
     }
 
     public static void restoreAfterTick() {
-        if (isThirdPerson()) {
-            if (!hasTarget && !smoothing) {
-                hasBody = false;
-                saved = false;
-            }
-            return;
-        }
-
         if (!saved) return;
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null) {
             saved = false;
-            hasBody = false;
+            hasBot = false;
             return;
         }
         p.setYRot(savedYaw);
         p.setXRot(savedPitch);
         saved = false;
-        if (!hasTarget && !smoothing) hasBody = false;
+        settle();
+    }
+
+    public static void applyForMovement(Entity self) {
+        LocalPlayer p = localPlayer(self);
+        if (p == null || moveSaved) return;
+        if (!hasBot) {
+            botYaw = p.getYRot();
+            botPitch = p.getXRot();
+            hasBot = true;
+        }
+        if (hasTarget && !smoothRequested) {
+            botYaw = targetYaw;
+            botPitch = targetPitch;
+        }
+        moveYaw = p.getYRot();
+        movePitch = p.getXRot();
+        moveSaved = true;
+        p.setYRot(botYaw);
+        p.setXRot(botPitch);
+    }
+
+    public static void restoreAfterMovement(Entity self) {
+        if (!moveSaved) return;
+        LocalPlayer p = localPlayer(self);
+        if (p == null) {
+            moveSaved = false;
+            return;
+        }
+        p.setYRot(moveYaw);
+        p.setXRot(movePitch);
+        moveSaved = false;
     }
 
     public static boolean isSettling() {
@@ -128,28 +125,11 @@ public final class RotationController {
 
     public static void reset() {
         hasTarget = false;
-        hasBody = false;
+        smoothRequested = false;
+        hasBot = false;
         smoothing = false;
         saved = false;
-    }
-
-    public static boolean isThirdPerson() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.options == null) return false;
-        CameraType type = mc.options.getCameraType();
-        return type != null && !type.isFirstPerson();
-    }
-
-    public static boolean overrideCamera() {
-        return isThirdPerson() && (hasTarget || smoothing || saved);
-    }
-
-    public static float getCameraYaw() {
-        return cameraYaw;
-    }
-
-    public static float getCameraPitch() {
-        return cameraPitch;
+        moveSaved = false;
     }
 
     public static void captureCamera(LocalPlayer p) {
@@ -163,20 +143,78 @@ public final class RotationController {
         return new float[] { cameraYaw, cameraPitch };
     }
 
+    private static void resolve(LocalPlayer p) {
+        if (!hasBot) {
+            botYaw = p.getYRot();
+            botPitch = p.getXRot();
+            hasBot = true;
+        }
+
+        if (hasTarget) {
+            if (smoothRequested) {
+                if (!atTarget()) smoothing = true;
+            } else {
+                botYaw = targetYaw;
+                botPitch = targetPitch;
+                smoothing = false;
+            }
+            hasTarget = false;
+            smoothRequested = false;
+        }
+
+        if (!smoothing) return;
+
+        botYaw = wrapYaw(botYaw + mouseToAngle(angleToMouse(clampStep(wrapYaw(targetYaw - botYaw), MAX_YAW_STEP))));
+        botPitch = clampPitch(botPitch + mouseToAngle(angleToMouse(clampStep(targetPitch - botPitch, MAX_PITCH_STEP))));
+        if (atTarget()) {
+            botYaw = targetYaw;
+            botPitch = targetPitch;
+            smoothing = false;
+        }
+    }
+
+    private static void save(LocalPlayer p) {
+        if (saved) return;
+        savedYaw = p.getYRot();
+        savedPitch = p.getXRot();
+        saved = true;
+    }
+
+    private static void settle() {
+        if (!hasTarget && !smoothing) hasBot = false;
+    }
+
+    private static LocalPlayer localPlayer(Entity self) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc == null ? null : mc.player;
+        if (p == null || p != self) return null;
+        return p;
+    }
+
     private static boolean atTarget() {
-        return Math.abs(wrapYaw(targetYaw - bodyYaw)) < 0.1f && Math.abs(targetPitch - bodyPitch) < 0.1f;
+        return Math.abs(wrapYaw(targetYaw - botYaw)) < REACHED_EPS && Math.abs(targetPitch - botPitch) < REACHED_EPS;
     }
 
-    private static float stepAngle(float current, float target, float maxStep) {
-        float diff = wrapYaw(target - current);
-        if (Math.abs(diff) <= maxStep) return wrapYaw(target);
-        return wrapYaw(current + Math.signum(diff) * maxStep);
+    private static float clampStep(float delta, float maxStep) {
+        if (delta > maxStep) return maxStep;
+        if (delta < -maxStep) return -maxStep;
+        return delta;
     }
 
-    private static float step(float current, float target, float maxStep) {
-        float diff = target - current;
-        if (Math.abs(diff) <= maxStep) return target;
-        return current + Math.signum(diff) * maxStep;
+    private static float angleToMouse(float angleDelta) {
+        float min = mouseToAngle(1f);
+        if (min <= 0f) return angleDelta;
+        return (float) Math.round(angleDelta / min);
+    }
+
+    private static float mouseToAngle(float mouseDelta) {
+        Minecraft mc = Minecraft.getInstance();
+        double sensitivity = 0.5d;
+        if (mc != null && mc.options != null && mc.options.sensitivity() != null) {
+            sensitivity = mc.options.sensitivity().get();
+        }
+        float f = (float) (sensitivity * 0.6d + 0.2d);
+        return (float) (mouseDelta * f * f * f * 8.0d) * 0.15f;
     }
 
     private static float wrapYaw(float yaw) {

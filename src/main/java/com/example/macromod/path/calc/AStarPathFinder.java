@@ -25,7 +25,7 @@ public class AStarPathFinder implements ActionCosts {
     private static final long PRIMARY_TIMEOUT_MS = 1500;
     private static final long FAILURE_TIMEOUT_MS = 4000;
     private static final double MIN_PARTIAL_DIST_SQ = 9.0;
-    private static final double HEURISTIC_WEIGHT = 1.35;
+    private static final double HEURISTIC_WEIGHT = 1.0;
 
     private final CalculationContext ctx;
     private final Goal goal;
@@ -114,8 +114,8 @@ public class AStarPathFinder implements ActionCosts {
                     node.parent = current;
                     node.cost = tentativeG;
                     node.movementToReach = m;
-                node.estimatedCost = goalDist(dest.getX(), dest.getY(), dest.getZ());
-                node.priority = tentativeG + node.estimatedCost * HEURISTIC_WEIGHT;
+                    node.estimatedCost = goalDist(dest.getX(), dest.getY(), dest.getZ());
+                    node.priority = tentativeG + node.estimatedCost * HEURISTIC_WEIGHT;
                     openSet.add(node);
                 }
             }
@@ -134,6 +134,7 @@ public class AStarPathFinder implements ActionCosts {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
+                if (!ctx.canStepDiagonally(from.getX(), from.getY(), from.getZ(), dx, dz)) continue;
 
                 BlockPos flat = new BlockPos(from.getX() + dx, from.getY(), from.getZ() + dz);
                 addIfValid(moves, new TraverseMovement(from, flat));

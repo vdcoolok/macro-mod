@@ -61,6 +61,11 @@ public class CalculationContext implements ActionCosts {
         return isSolidGround(x, y - 1, z) && isPassable(x, y + 1, z);
     }
 
+    public boolean canStepDiagonally(int x, int y, int z, int dx, int dz) {
+        if (dx == 0 || dz == 0) return true;
+        return diagonalSidesClear(x, y, z, dx, dz);
+    }
+
     public boolean canFitThroughDiagonal(int x, int y, int z, int dx, int dz) {
         if (dx == 0 || dz == 0) return true;
         return diagonalSidesClear(x, y, z, dx, dz);

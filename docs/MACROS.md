@@ -82,9 +82,11 @@ This page lists every action prefix you can use in a macro file. Full command de
 
 ## Smooth Looking
 
-`look at` snaps the view instantly. `smoothlookat` turns the head toward the target over a few ticks instead, and the macro waits for the turn to finish before continuing.
+`look at` snaps the view instantly. `smoothlookat` turns toward the target over a few ticks instead, and the macro waits for the turn to finish before continuing.
 
-Pathing head turning follows the global setting: `/macro set smoothlook true` turns smoothing on for every automatic head movement, `/macro set smoothlook false` turns it off. Smoothing is on by default. `auto look` and `auto lookhere` are always instant, because they exist to correct drift immediately.
+The turn is applied to the rotation the bot walks and sends to the server, not to your camera. Your own view stays under your control the whole time, in first and third person, exactly like free look in Baritone. The rotation is also snapped to whole mouse pixels, so it never jitters between impossible angles.
+
+Pathing head turning follows the global setting: `/macro set smoothlook true` turns smoothing on for every automatic turn, `/macro set smoothlook false` turns it off. Smoothing is on by default. `look at`, `auto look` and `auto lookhere` are always instant, because they set your actual view and exist to correct drift immediately.
 
 ## Values
 

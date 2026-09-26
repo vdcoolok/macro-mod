@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 public class GoalBlock implements Goal, ActionCosts {
 
     private static final double SQRT_2 = Math.sqrt(2);
+    private static final double COST_HEURISTIC = SPRINT_ONE_BLOCK_COST;
+    private static final double FALL_PER_BLOCK = FALL_TWO_BLOCK_COST / 2;
 
     private final int x, y, z;
     private final double exactX, exactY, exactZ;
@@ -54,7 +56,7 @@ public class GoalBlock implements Goal, ActionCosts {
     }
 
     private static double goalYLevel(int yDiff) {
-        if (yDiff > 0) return yDiff * FALL_ONE_BLOCK_COST;
+        if (yDiff > 0) return yDiff * FALL_PER_BLOCK;
         if (yDiff < 0) return -yDiff * JUMP_ONE_BLOCK_COST;
         return 0;
     }
@@ -64,6 +66,6 @@ public class GoalBlock implements Goal, ActionCosts {
         double az = Math.abs(zDiff);
         double straight = Math.max(ax, az) - Math.min(ax, az);
         double diagonal = Math.min(ax, az) * SQRT_2;
-        return diagonal + straight;
+        return (diagonal + straight) * COST_HEURISTIC;
     }
 }

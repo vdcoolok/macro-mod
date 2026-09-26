@@ -11,7 +11,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LocalPlayer.class)
 public abstract class LocalPlayerMixin {
 
-    @Inject(method = "tick", at = @At("HEAD"))
+    @Inject(
+        method = "tick",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V",
+            shift = At.Shift.AFTER
+        )
+    )
     private void macromod$applyRotationBeforeTick(CallbackInfo ci) {
         RotationController.applyBeforeTick();
     }

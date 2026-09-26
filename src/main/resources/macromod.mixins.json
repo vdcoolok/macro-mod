@@ -7,8 +7,8 @@
     "KeyboardHandlerMixin",
     "KeyMappingMixin",
     "GameRendererMixin",
-    "LocalPlayerMixin",
-    "MinecraftMixin"
+    "EntityMixin",
+    "LocalPlayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
