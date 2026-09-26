@@ -7,9 +7,38 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(KeyMapping.class)
 public class KeyMappingMixin {
+
+    @Inject(
+        method = "set(Lcom/mojang/blaze3d/platform/InputConstants$Key;Z)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private static void macromod$guardSet(InputConstants.Key key, boolean held, CallbackInfo ci) {
+        Boolean forced = ForcedInputState.forcedState(key);
+        if (forced != null && forced != held) {
+            ci.cancel();
+            KeyMapping.set(key, forced);
+        }
+    }
+
+    @Inject(
+        method = "setDown",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void macromod$guardSetDown(boolean held, CallbackInfoReturnable<Boolean> cir) {
+        InputConstants.Key key = net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf((KeyMapping) (Object) this);
+        if (key != null) {
+            Boolean forced = ForcedInputState.forcedState(key);
+            if (forced != null && forced != held) {
+                cir.setReturnValue(held);
+            }
+        }
+    }
 
     @Inject(
         method = {"releaseAll", "restoreToggleStatesOnScreenClosed"},

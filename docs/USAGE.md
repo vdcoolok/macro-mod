@@ -37,7 +37,7 @@
 
 | Command | Description |
 |---|---|
-| `/macro attack <hostile\|mobs\|names>` | Starts the kill routine, names are fuzzy matched |
+| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine, names are fuzzy matched |
 | `/macro attack set attackmode <spam\|crit>` | Selects the attack style |
 | `/macro attack set spaminterval <ms>` | Sets the hit interval for spam mode |
 | `/macro follow <name>` | Follows a mob or player by name |
@@ -116,6 +116,7 @@ The folder is created on the first `/macro` run. Files can also be edited with a
 |---|---|
 | `attack hostile` | Kills the closest hostile mobs until stopped |
 | `attack mobs` | Kills the closest living entity |
+| `attack passive` | Kills the closest passive mobs |
 | `attack zombie skeleton` | Kills the closest zombie or skeleton (fuzzy names) |
 | `follow <name>` | Follows a mob or player by name |
 | `combatstop` | Stops attack/follow |

@@ -57,7 +57,7 @@
 - [x] Water bucket clutches for big falls
 - [x] Edge sneaking along cliff ledges
 - [x] Breaking through walls when it beats detouring
-- [x] Walking on closed trapdoors, bottom slabs and thin snow
+- [x] Walking on closed trapdoors and bottom slabs, walking through thin snow
 - [x] Swimming
 - [x] Hazard avoidance: fire, cactus, magma, cobwebs, dripstone, powder snow
 - [x] Exploring toward goals in unloaded chunks
@@ -80,7 +80,7 @@
 |---|---|
 | `/macro load <name>` | Runs a macro file |
 | `/macro stop` | Stops everything and releases all inputs |
-| `/macro attack <hostile\|mobs\|names>` | Starts the kill routine |
+| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine |
 | `/macro follow <name>` | Follows a mob or player |
 | `/macro combatstop` | Stops attack/follow only |
 | `/macro pathdebug walk <x> <y> <z>` | Tests pathfinding to a coordinate |

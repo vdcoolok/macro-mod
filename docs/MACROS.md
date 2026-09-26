@@ -40,7 +40,7 @@ This page lists every action prefix you can use in a macro file. Full command de
 
 | Prefix | Syntax |
 |---|---|
-| `attack` | `attack hostile` / `attack mobs` / `attack <name> [name...]` (alias `kill`) |
+| `attack` | `attack hostile` / `attack passive` / `attack mobs` / `attack <name> [name...]` (alias `kill`) |
 | `follow` | `follow <name>` |
 | `combatstop` | `combatstop` (aliases `stopcombat`, `stopattack`, `unfollow`) |
 

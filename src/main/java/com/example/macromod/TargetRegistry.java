@@ -11,6 +11,8 @@ import java.util.Set;
 
 public final class TargetRegistry {
 
+    public static final String PASSIVE_TOKEN = "__passive__";
+
     private static final Set<EntityType<?>> hostile = new HashSet<>();
     private static final Set<EntityType<?>> passive = new HashSet<>();
     private static boolean initialized = false;

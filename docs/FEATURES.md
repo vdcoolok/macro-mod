@@ -27,7 +27,7 @@ Baritone style A* over the chunks you have loaded.
 | Bucket clutch | Water bucket for large drops when one is available |
 | Edge sneaking | Careful movement along cliff ledges |
 | Breaking | Digs through blocks when faster than detouring |
-| Slabs and trapdoors | Walks on closed trapdoors, bottom slabs, thin snow (up to 3 layers) |
+| Slabs and trapdoors | Walks on closed trapdoors and bottom slabs, walks through thin snow (up to 3 layers) |
 | Swimming | Water sources are walkable, flowing fluid is avoided |
 
 <details>

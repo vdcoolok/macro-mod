@@ -29,6 +29,10 @@ public final class ForcedInputState {
         return forcedKeyStates.containsKey(key);
     }
 
+    public static Boolean forcedState(InputConstants.Key key) {
+        return forcedKeyStates.get(key);
+    }
+
     public static boolean isMouseForced(int button) {
         return forcedMouseButtons.contains(button);
     }
@@ -44,5 +48,9 @@ public final class ForcedInputState {
     public static void clear() {
         forcedKeyStates.clear();
         forcedMouseButtons.clear();
+    }
+
+    public static boolean isEmpty() {
+        return forcedKeyStates.isEmpty() && forcedMouseButtons.isEmpty();
     }
 }

@@ -134,6 +134,10 @@ public class MacroParser {
             actions.add(MacroAction.attack(true, List.of()));
             return;
         }
+        if (first.equals("passive")) {
+            actions.add(MacroAction.attack(false, List.of(com.example.macromod.TargetRegistry.PASSIVE_TOKEN)));
+            return;
+        }
         if (first.equals("mobs") || first.equals("all")) {
             actions.add(MacroAction.attack(false, List.of()));
             return;

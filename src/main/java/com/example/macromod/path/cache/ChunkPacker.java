@@ -54,14 +54,12 @@ public class ChunkPacker {
         }
 
         if (state.getBlock() instanceof SnowLayerBlock) {
-            if (level != null && pos != null) {
-                int layers = state.getValue(SnowLayerBlock.LAYERS);
-                BlockState below = level.getBlockState(pos.below());
-                if (layers <= 3 && isSolidGround(below, level, pos.below())) {
-                    return PathingBlockType.SOLID;
-                }
-                return PathingBlockType.AVOID;
-            }
+            return state.getValue(SnowLayerBlock.LAYERS) <= 3
+                ? PathingBlockType.AIR
+                : PathingBlockType.AVOID;
+        }
+
+        if (state.getBlock() instanceof net.minecraft.world.level.block.StairBlock) {
             return PathingBlockType.SOLID;
         }
 
@@ -69,12 +67,28 @@ public class ChunkPacker {
 
         if (state.getBlock() instanceof LeavesBlock) return PathingBlockType.SOLID;
 
+        if (isTinyCollisionPlant(state)) return PathingBlockType.AIR;
+
         if (isWalkableGround(state, level, pos)) return PathingBlockType.SOLID;
 
         try {
             return state.blocksMotion() ? PathingBlockType.SOLID : PathingBlockType.AIR;
         } catch (Exception e) {
             return PathingBlockType.SOLID;
+        }
+    }
+
+    private static boolean isTinyCollisionPlant(BlockState state) {
+        try {
+            if (!(state.getBlock() instanceof net.minecraft.world.level.block.BushBlock)
+                    && !(state.getBlock() instanceof net.minecraft.world.level.block.CropBlock)
+                    && !(state.getBlock() instanceof net.minecraft.world.level.block.NetherWartBlock)) {
+                return false;
+            }
+            if (isHazardBlock(state)) return false;
+            return collisionHeight(state, null, null) < 0.2;
+        } catch (Exception e) {
+            return false;
         }
     }
 

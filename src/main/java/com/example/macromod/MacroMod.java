@@ -38,6 +38,10 @@ public class MacroMod implements ClientModInitializer {
             CachedWorld.get().queue(chunk);
         });
 
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            MacroExecutor.reassertForcedInputs(client);
+        });
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             MacroExecutor.tick(client);
             BackgroundInputHandler.tick(client);

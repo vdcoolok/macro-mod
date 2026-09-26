@@ -228,6 +228,10 @@ public final class CombatController {
     private static boolean matchesCriteria(LivingEntity entity) {
         if (hostileOnly && !(entity instanceof Monster)) return false;
 
+        if (nameFilters.contains(TargetRegistry.PASSIVE_TOKEN)) {
+            return !(entity instanceof Monster);
+        }
+
         if (nameFilters.isEmpty()) return true;
 
         EntityType<?> type = entity.getType();

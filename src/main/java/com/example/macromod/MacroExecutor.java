@@ -267,8 +267,25 @@ public class MacroExecutor {
         return Boolean.TRUE.equals(mouseStates.get(button.toLowerCase()));
     }
 
+    public static boolean isAnyInputForced() {
+        return !keyStates.isEmpty() || !mouseStates.isEmpty();
+    }
+
     public static MacroAction getActiveSnapLook() {
         return activeSnapLook;
+    }
+
+    public static void reassertForcedInputs(Minecraft client) {
+        if (ForcedInputState.isEmpty()) return;
+        for (Map.Entry<InputConstants.Key, Boolean> e : ForcedInputState.getForcedKeyStates().entrySet()) {
+            KeyMapping.set(e.getKey(), e.getValue());
+        }
+        for (int button : ForcedInputState.getForcedMouseButtons()) {
+            KeyMapping.set(InputConstants.Type.MOUSE.getOrCreate(button), true);
+        }
+        if (client.player != null) {
+            reapplyActiveStates();
+        }
     }
 
     private static void reapplyActiveStates() {
@@ -308,17 +325,41 @@ public class MacroExecutor {
     }
 
     private static void setKeyState(String name, boolean pressed) {
-        KeyMapping mapping = resolveKeyMapping(name);
-        if (mapping == null) {
-            System.err.println("[MacroMod] Unknown key: " + name);
-            return;
+        KeyMapping mapping;
+        InputConstants.Key key;
+
+        if (isSemanticKey(name)) {
+            mapping = resolveKeyMapping(name);
+            if (mapping == null) {
+                System.err.println("[MacroMod] Unknown key: " + name);
+                return;
+            }
+            key = net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(mapping);
+            if (key == null) key = mapping.getDefaultKey();
+            mapping.setDown(pressed);
+            KeyMapping.set(key, pressed);
+        } else {
+            int glfw = keyNameToGlfw(name);
+            if (glfw == -1) {
+                System.err.println("[MacroMod] Unknown key: " + name);
+                return;
+            }
+            key = InputConstants.Type.KEYSYM.getOrCreate(glfw);
+            mapping = resolvePhysicalMapping(key);
+            KeyMapping.set(key, pressed);
         }
-        mapping.setDown(pressed);
-        InputConstants.Key key = net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(mapping);
-        if (key == null) key = mapping.getDefaultKey();
-        KeyMapping.set(key, pressed);
+
         ForcedInputState.forceKey(key, pressed);
         keyStates.put(name, pressed);
+    }
+
+    private static KeyMapping resolvePhysicalMapping(InputConstants.Key key) {
+        Minecraft c = Minecraft.getInstance();
+        if (c == null || c.options == null) return null;
+        for (KeyMapping m : c.options.keyMappings) {
+            if (key.equals(net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(m))) return m;
+        }
+        return null;
     }
 
     private static void setMouseState(String button, boolean pressed) {
@@ -378,6 +419,15 @@ public class MacroExecutor {
             case "8" -> c.options.keyHotbarSlots[7];
             case "9" -> c.options.keyHotbarSlots[8];
             default -> null;
+        };
+    }
+
+    private static boolean isSemanticKey(String name) {
+        return switch (name.toLowerCase()) {
+            case "forward", "back", "backward", "left", "right", "jump",
+                 "sneak", "sprint", "inventory", "drop", "swap", "swapoffhand",
+                 "chat", "playerlist" -> true;
+            default -> false;
         };
     }
 

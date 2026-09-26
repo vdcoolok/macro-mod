@@ -177,11 +177,13 @@ public class MacroCommand {
 
                 .then(ClientCommands.literal("attack")
                     .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack <hostile|mobs|mob_name...>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro attack <hostile|passive|mobs|mob_name...>"));
                         return 0;
                     })
                     .then(ClientCommands.literal("hostile")
                         .executes(ctx -> startAttack(ctx.getSource(), true, List.of())))
+                    .then(ClientCommands.literal("passive")
+                        .executes(ctx -> startAttack(ctx.getSource(), false, List.of(TargetRegistry.PASSIVE_TOKEN))))
                     .then(ClientCommands.literal("mobs")
                         .executes(ctx -> startAttack(ctx.getSource(), false, List.of())))
                     .then(ClientCommands.literal("set")
@@ -207,6 +209,9 @@ public class MacroCommand {
                         .suggests(mobNameSuggestions())
                         .executes(ctx -> startAttack(ctx.getSource(), false,
                             splitNames(StringArgumentType.getString(ctx, "mobs")))))
+                )
+
+                .then(ClientCommands.literal("kill")
                 )
 
                 .then(ClientCommands.literal("follow")
@@ -249,6 +254,7 @@ public class MacroCommand {
         CombatController.start(hostile, filters);
         String targetDesc = hostile ? "hostile mobs"
             : filters.isEmpty() ? "all mobs"
+            : filters.equals(List.of(TargetRegistry.PASSIVE_TOKEN)) ? "passive mobs"
             : String.join(", ", filters);
         source.sendFeedback(Component.literal("§aAttacking §f" + targetDesc
             + " §7(" + CombatController.getMode() + " mode, "
@@ -304,6 +310,9 @@ public class MacroCommand {
     private static SuggestionProvider<FabricClientCommandSource> mobNameSuggestions() {
         return (ctx, builder) -> {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            for (String literal : List.of("hostile", "passive", "mobs")) {
+                if (literal.startsWith(remaining)) builder.suggest(literal);
+            }
             Minecraft client = Minecraft.getInstance();
             if (client.level != null && client.player != null) {
                 java.util.Set<String> seen = new java.util.HashSet<>();
@@ -314,8 +323,6 @@ public class MacroCommand {
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
             }
-            builder.suggest("hostile");
-            builder.suggest("mobs");
             return builder.buildFuture();
         };
     }
@@ -381,7 +388,10 @@ public class MacroCommand {
             "hold", "release", "press", "click",
             "chat", "cmd",
             "wait", "loop", "endloop",
-            "bind", "cycle"
+            "bind", "cycle",
+            "attack", "kill", "follow",
+            "combatstop", "stopcombat", "stopattack", "unfollow",
+            "nolookgoto", "nolookautogoto"
         };
         return (ctx, builder) -> {
             String remaining = builder.getRemaining();
@@ -407,7 +417,7 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro action remove <n> §7— remove action N"));
         source.sendFeedback(Component.literal("§f/macro action list §7— list all actions"));
         source.sendFeedback(Component.literal("§f/macro action move <from> <to> §7— move an action"));
-        source.sendFeedback(Component.literal("§f/macro attack <hostile|mobs|names> §7— hunt and attack mobs"));
+        source.sendFeedback(Component.literal("§f/macro attack <hostile|passive|mobs|names> §7— hunt and attack mobs"));
         source.sendFeedback(Component.literal("§f/macro attack set attackmode <spam|crit> §7— choose attack style"));
         source.sendFeedback(Component.literal("§f/macro attack set spaminterval <ms> §7— set hit interval"));
         source.sendFeedback(Component.literal("§f/macro follow <name> §7— follow a mob or player"));
@@ -642,6 +652,18 @@ public class MacroCommand {
                 return "bind " + rest.trim();
             case "cycle":
                 return "cycle " + rest.trim();
+            case "attack", "kill":
+                if (rest.isBlank()) throw new IllegalArgumentException("attack needs hostile, passive, mobs, or mob names");
+                return "attack " + rest.trim();
+            case "follow":
+                if (rest.isBlank()) throw new IllegalArgumentException("follow needs a mob or player name");
+                return "follow " + rest.trim();
+            case "combatstop", "stopcombat", "stopattack", "unfollow":
+                return "combatstop";
+            case "nolookgoto", "nolookwalk", "nolookgo":
+                return "nolookgoto \"" + resolveCoords(rest, client) + "\"";
+            case "nolookautogoto", "nolookautowalk":
+                return "nolookautogoto \"" + resolveCoords(rest, client) + "\"";
             case "key_hold":
                 return "hold " + rest.trim();
             case "key_release":
