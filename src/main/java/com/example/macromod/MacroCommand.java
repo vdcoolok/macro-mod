@@ -8,8 +8,10 @@ import com.example.macromod.path.goal.GoalXZ;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class MacroCommand {
+
+    private static final int MAX_TARGETS = 4;
 
     public static void register() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -231,10 +235,10 @@ public class MacroCommand {
                         return 0;
                     })
                     .then(ClientCommands.literal("only")
-                        .then(ClientCommands.argument("onlyTarget", StringArgumentType.greedyString())
-                            .suggests(followTargetSuggestions())
+                        .then(ClientCommands.argument("onlyFollowTarget", StringArgumentType.string())
+                            .suggests(entityIdSuggestions())
                             .executes(ctx -> startFollow(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "onlyTarget"), true))))
+                                StringArgumentType.getString(ctx, "onlyFollowTarget"), true))))
                     .then(ClientCommands.argument("target", StringArgumentType.greedyString())
                         .suggests(followTargetSuggestions())
                         .executes(ctx -> startFollow(ctx.getSource(),
@@ -268,10 +272,7 @@ public class MacroCommand {
                         "§cUsage: /macro " + name + " only <namespace:id...>"));
                     return 0;
                 })
-                .then(ClientCommands.argument("onlyTargets", StringArgumentType.greedyString())
-                    .suggests(mobNameSuggestions())
-                    .executes(ctx -> startAttack(ctx.getSource(), false,
-                        splitNames(StringArgumentType.getString(ctx, "onlyTargets")), true))))
+                .then(buildTargetChain("onlyTarget", 0, true)))
             .then(ClientCommands.literal("set")
                 .executes(ctx -> {
                     ctx.getSource().sendFeedback(Component.literal(
@@ -292,10 +293,32 @@ public class MacroCommand {
                         .executes(ctx -> setSpamInterval(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "ms")))))
             )
-            .then(ClientCommands.argument("targets", StringArgumentType.greedyString())
-                .suggests(mobNameSuggestions())
-                .executes(ctx -> startAttack(ctx.getSource(), false,
-                    splitNames(StringArgumentType.getString(ctx, "targets")), false)));
+            .then(buildTargetChain("target", 0, false));
+    }
+
+    private static RequiredArgumentBuilder<FabricClientCommandSource, String> buildTargetChain(
+            String prefix, int index, boolean only) {
+        String argName = prefix + index;
+        RequiredArgumentBuilder<FabricClientCommandSource, String> node = ClientCommands
+            .argument(argName, StringArgumentType.string())
+            .suggests(only ? entityIdSuggestions() : mobNameSuggestions())
+            .executes(ctx -> startAttack(ctx.getSource(), false,
+                collectTargets(ctx, prefix, index), only));
+
+        if (index < MAX_TARGETS - 1) {
+            node = node.then(buildTargetChain(prefix, index + 1, only));
+        }
+        return node;
+    }
+
+    private static List<String> collectTargets(
+            CommandContext<FabricClientCommandSource> ctx, String prefix, int upto) {
+        List<String> filters = new ArrayList<>();
+        for (int i = 0; i <= upto; i++) {
+            String value = StringArgumentType.getString(ctx, prefix + i);
+            if (value != null && !value.isBlank()) filters.addAll(splitNames(value));
+        }
+        return filters;
     }
 
     private static int setSmoothLook(FabricClientCommandSource source, boolean enabled) {
@@ -402,7 +425,7 @@ public class MacroCommand {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
             java.util.Set<String> seen = new java.util.HashSet<>();
 
-            for (String literal : List.of("hostile", "passive", "mobs")) {
+            for (String literal : List.of("hostile", "passive", "mobs", "only")) {
                 if (literal.startsWith(remaining)) {
                     builder.suggest(literal);
                     seen.add(literal);
@@ -418,9 +441,16 @@ public class MacroCommand {
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
             }
+            return builder.buildFuture();
+        };
+    }
 
-            for (String name : com.example.macromod.TargetRegistry.mobIds()) {
-                if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
+    private static SuggestionProvider<FabricClientCommandSource> entityIdSuggestions() {
+        return (ctx, builder) -> {
+            String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            String prefix = com.example.macromod.TargetRegistry.normalizeIdPrefix(remaining);
+            for (String id : com.example.macromod.TargetRegistry.mobIds()) {
+                if (id.startsWith(prefix)) builder.suggest(id);
             }
             return builder.buildFuture();
         };
@@ -439,9 +469,6 @@ public class MacroCommand {
                         : com.example.macromod.TargetRegistry.shortName(e.getType());
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
-            }
-            for (String name : com.example.macromod.TargetRegistry.mobIds()) {
-                if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
             }
             return builder.buildFuture();
         };

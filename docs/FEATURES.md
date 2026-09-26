@@ -93,6 +93,10 @@ If the goal lies in ungenerated chunks, the bot walks a straight line toward it 
 
 `only` is the readable form. It means attack that and that, nothing else, so a typo can never silently widen the target set, and an unrecognised name is rejected up front instead of turning into a silent no-op later. Names still work with it, `only zombie skeleton` resolves to `minecraft:zombie minecraft:skeleton`.
 
+The full entity list comes from the game registry, not from what is loaded in your world, so it includes mobs you have never seen and modded entities. Tab completion drops the `minecraft:` prefix while you type, so `zom` offers `minecraft:zombie` and `mymod:zom` offers `mymod:zombie`. The list only appears under `only`, the plain form suggests the mobs currently around you.
+
+Each target is its own argument, up to four, so completion keeps working after the first mob instead of dying the way a single greedy argument would.
+
 ### Modes
 
 | Mode | Behavior |

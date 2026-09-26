@@ -2,8 +2,6 @@ package com.example.macromod;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.monster.Monster;
 
 import java.util.ArrayList;
@@ -68,12 +66,18 @@ public final class TargetRegistry {
         if (mobIds.isEmpty()) {
             Set<String> ids = new TreeSet<>();
             for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
-                if (!isMob(type)) continue;
                 ids.add(id(type));
             }
             mobIds.addAll(ids);
         }
         return Collections.unmodifiableList(mobIds);
+    }
+
+    public static String normalizeIdPrefix(String remaining) {
+        String value = remaining == null ? "" : remaining.trim().toLowerCase(Locale.ROOT);
+        if (value.isEmpty()) return "";
+        if (value.indexOf(':') < 0) return "minecraft:" + value;
+        return value;
     }
 
     public static String id(EntityType<?> type) {
@@ -101,7 +105,6 @@ public final class TargetRegistry {
     }
 
     private static boolean isMob(EntityType<?> type) {
-        if (type.getCategory() == MobCategory.MISC) return false;
-        return LivingEntity.class.isAssignableFrom(type.getBaseClass());
+        return type != null;
     }
 }

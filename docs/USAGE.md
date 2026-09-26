@@ -51,6 +51,10 @@
 > Everything is under `/macro`. There is no `/combat` command, and `/macro attack mobs` targets any living entity while `/macro attack <names>` fuzzy matches the names you give.
 >
 > Put `only` in front of your targets when you want exactly those and nothing else. It skips fuzzy matching, so a name that does not resolve is reported immediately as an unknown entity id rather than quietly matching something else or matching nothing. It works on `/macro follow` too, and bare names are fine: `only zombie skeleton` resolves to `minecraft:zombie minecraft:skeleton`.
+>
+> The entity list is the whole game registry, not just what is loaded around you, so it covers mobs you have never seen and modded entities. Type without the namespace, `zom` offers `minecraft:zombie`. The full list only shows under `only`, the plain form suggests the mobs currently nearby.
+>
+> You can pass up to four targets and completion keeps working for each one, so `only minecraft:zombie <tab>` still offers the full list.
 
 ### Pathfinding
 
