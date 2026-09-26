@@ -44,7 +44,9 @@ public class CalculationContext implements ActionCosts {
 
     public boolean isSolidGround(int x, int y, int z) {
         if (y < minY || y >= maxY) return false;
-        return getBlockType(x, y, z) == PathingBlockType.SOLID;
+        if (getBlockType(x, y, z) != PathingBlockType.SOLID) return false;
+        CachedChunk c = cache.getChunk(x >> 4, z >> 4);
+        return c == null || !c.isNoGround(x & 15, y, z & 15);
     }
 
     public boolean isHazard(int x, int y, int z) {

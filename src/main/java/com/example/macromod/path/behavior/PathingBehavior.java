@@ -42,6 +42,7 @@ public class PathingBehavior {
     private boolean exploring = false;
 
     private long lastRecalc = 0;
+    private int generation = 0;
 
     private PathingBehavior() {}
 
@@ -82,6 +83,7 @@ public class PathingBehavior {
     }
 
     public void setGoal(Goal goal) {
+        generation++;
         this.currentGoal = goal;
         this.activeGoal = goal;
         this.executor = null;
@@ -92,6 +94,7 @@ public class PathingBehavior {
     }
 
     public void stop() {
+        generation++;
         if (context != null) context.releaseAllInputs();
         com.example.macromod.path.render.RotationController.reset();
         NolookController.setMode(NolookController.Mode.NONE);
@@ -120,6 +123,7 @@ public class PathingBehavior {
         final int sx = startPos.getX();
         final int sy = startPos.getY();
         final int sz = startPos.getZ();
+        final int gen = generation;
 
         Thread calcThread = new Thread(() -> {
             long t0 = System.currentTimeMillis();
@@ -127,6 +131,8 @@ public class PathingBehavior {
                 AStarPathFinder finder = new AStarPathFinder(context, goal, sx, sy, sz);
                 Path path = finder.calculate();
                 long dt = System.currentTimeMillis() - t0;
+
+                if (gen != generation) return;
 
                 if (path == null || path.isFinished()) {
                     calculating = false;
@@ -163,7 +169,7 @@ public class PathingBehavior {
                 calculating = false;
             } catch (Throwable t) {
                 System.err.println("[MacroMod] Path calculation crashed: " + t);
-                calculating = false;
+                if (gen == generation) calculating = false;
             }
         }, "MacroMod-PathCalc");
         calcThread.setDaemon(true);

@@ -14,6 +14,7 @@ public class CachedChunk {
 
     private final BitSet data;
     private final byte[] breakTicks;
+    private final BitSet noGround;
     private final Map<Integer, Block> specialBlocks;
     public final int x, z;
     private boolean loaded;
@@ -23,8 +24,27 @@ public class CachedChunk {
         this.z = z;
         this.data = new BitSet(SIZE * 2);
         this.breakTicks = new byte[SIZE];
+        this.noGround = new BitSet(SIZE);
         this.specialBlocks = new HashMap<>();
         this.loaded = false;
+    }
+
+    public boolean isNoGround(int lx, int y, int lz) {
+        int index = index(lx, y, lz);
+        if (index < 0 || index >= SIZE) return true;
+        return noGround.get(index);
+    }
+
+    public void setNoGround(int lx, int y, int lz) {
+        int index = index(lx, y, lz);
+        if (index < 0 || index >= SIZE) return;
+        noGround.set(index);
+    }
+
+    public void clearNoGround(int lx, int y, int lz) {
+        int index = index(lx, y, lz);
+        if (index < 0 || index >= SIZE) return;
+        noGround.clear(index);
     }
 
     public synchronized void set(int lx, int y, int lz, PathingBlockType type) {

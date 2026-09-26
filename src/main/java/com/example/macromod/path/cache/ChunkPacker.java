@@ -32,6 +32,7 @@ public class ChunkPacker {
                     pos.set(chunk.getPos().getMinBlockX() + lx, y, chunk.getPos().getMinBlockZ() + lz);
                     BlockState state = chunk.getBlockState(pos);
                     cached.set(lx, y, lz, getPathingBlockType(state, level, pos));
+                    if (isUnstableGround(state)) cached.setNoGround(lx, y, lz);
 
                     if (isSpecialBlock(state)) {
                         cached.setSpecialBlock(lx, y, lz, state.getBlock());
@@ -81,6 +82,10 @@ public class ChunkPacker {
         } catch (Exception e) {
             return PathingBlockType.SOLID;
         }
+    }
+
+    private static boolean isUnstableGround(BlockState state) {
+        return state.getBlock() instanceof LeavesBlock;
     }
 
     private static boolean isTinyCollisionPlant(BlockState state) {

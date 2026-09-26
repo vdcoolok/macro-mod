@@ -2,7 +2,6 @@ package com.example.macromod;
 
 import com.example.macromod.path.behavior.PathingBehavior;
 import com.example.macromod.path.calc.CalculationContext;
-import com.example.macromod.path.goal.GoalBlock;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -22,10 +21,9 @@ public final class CombatController {
 
     public enum AttackMode { SPAM, CRIT }
 
-    private static final double ATTACK_RANGE_SQ = 9.0;
-    private static final double FOLLOW_STOP_DIST_SQ = 1.0;
-    private static final double CRIT_MIN_DIST = 2.0;
-    private static final double CRIT_MAX_DIST = 3.0;
+    private static final double MAX_ATTACK_DIST = 4.45;
+    private static final double MAX_ATTACK_DIST_SQ = MAX_ATTACK_DIST * MAX_ATTACK_DIST;
+    private static final double CRIT_FALL_DROP = 0.55;
     private static final int SCAN_INTERVAL_TICKS = 10;
     private static final long DEFAULT_SPAM_INTERVAL_MS = 500;
     private static final double MAX_SCAN_RANGE = 64.0;
@@ -38,9 +36,11 @@ public final class CombatController {
     private static long spamIntervalMs = DEFAULT_SPAM_INTERVAL_MS;
 
     private static LivingEntity target;
+    private static BlockPos lastGoal;
     private static long lastAttackMs = 0;
     private static int scanCooldown = 0;
     private static boolean critJumpQueued = false;
+    private static double critPeakY = 0.0;
 
     private CombatController() {}
 
@@ -53,18 +53,22 @@ public final class CombatController {
             }
         }
         target = null;
+        lastGoal = null;
         lastAttackMs = 0;
         scanCooldown = 0;
         critJumpQueued = false;
+        critPeakY = 0.0;
         active = true;
     }
 
     public static void stop() {
         active = false;
         target = null;
+        lastGoal = null;
         nameFilters.clear();
         hostileOnly = false;
         critJumpQueued = false;
+        critPeakY = 0.0;
         PathingBehavior.get().stop();
         CalculationContext ctx = new CalculationContext();
         ctx.setInput("attack", false);
@@ -123,22 +127,27 @@ public final class CombatController {
 
     private static void updatePathGoal(Minecraft client, double distSq) {
         PathingBehavior pathing = PathingBehavior.get();
-        if (distSq > ATTACK_RANGE_SQ) {
+        if (distSq > MAX_ATTACK_DIST_SQ) {
             Vec3 tp = target.position();
-            pathing.setGoal(new GoalBlock(
+            BlockPos goal = new BlockPos(
                 Math.floor(tp.x),
                 Math.floor(tp.y),
-                Math.floor(tp.z)));
-        } else if (pathing.isPathing()) {
-            pathing.stop();
+                Math.floor(tp.z));
+            if (!goal.equals(lastGoal)) {
+                lastGoal = goal;
+                pathing.setGoal(goal);
+            }
+        } else {
+            lastGoal = null;
+            if (pathing.isPathing()) pathing.stop();
         }
     }
 
     private static void tickSpam(Minecraft client, double distSq) {
-        if (distSq > ATTACK_RANGE_SQ) return;
-
         CalculationContext ctx = new CalculationContext();
         lookAtTarget(ctx, client, target);
+
+        if (distSq > MAX_ATTACK_DIST_SQ) return;
 
         long now = System.currentTimeMillis();
         if (now - lastAttackMs >= spamIntervalMs) {
@@ -149,39 +158,40 @@ public final class CombatController {
 
     private static void tickCrit(Minecraft client, double distSq) {
         LocalPlayer player = client.player;
-        double dist = Math.sqrt(distSq);
         CalculationContext ctx = new CalculationContext();
 
+        lookAtTarget(ctx, client, target);
+
         if (!player.onGround()) {
-            if (critJumpQueued) {
-                Vec3 delta = player.getDeltaMovement();
-                if (delta.y < 0 && dist <= CRIT_MAX_DIST) {
-                    lookAtTarget(ctx, client, target);
-                    performAttack(client);
-                    critJumpQueued = false;
-                    lastAttackMs = System.currentTimeMillis();
-                }
-            }
             ctx.setInput("jump", false);
+            if (!critJumpQueued) return;
+
+            critPeakY = Math.max(critPeakY, player.getY());
+
+            Vec3 delta = player.getDeltaMovement();
+            boolean falling = delta.y < 0;
+            boolean deepEnough = critPeakY - player.getY() >= CRIT_FALL_DROP;
+            if (falling && deepEnough && distSq <= MAX_ATTACK_DIST_SQ) {
+                performAttack(client);
+                critJumpQueued = false;
+                lastAttackMs = System.currentTimeMillis();
+            }
             return;
         }
 
         critJumpQueued = false;
+        critPeakY = 0.0;
 
-        if (distSq > ATTACK_RANGE_SQ) return;
-
-        lookAtTarget(ctx, client, target);
-
-        boolean inCritWindow = dist >= CRIT_MIN_DIST && dist <= CRIT_MAX_DIST;
-        if (!inCritWindow) return;
+        if (distSq > MAX_ATTACK_DIST_SQ) return;
 
         long now = System.currentTimeMillis();
-        if (now - lastAttackMs >= spamIntervalMs) {
-            ctx.setInput("jump", true);
-            player.jumpFromGround();
-            critJumpQueued = true;
-            lastAttackMs = now;
-        }
+        if (now - lastAttackMs < spamIntervalMs) return;
+
+        ctx.setInput("jump", true);
+        player.jumpFromGround();
+        critJumpQueued = true;
+        critPeakY = player.getY();
+        lastAttackMs = now;
     }
 
     private static void performAttack(Minecraft client) {

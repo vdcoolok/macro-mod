@@ -59,6 +59,7 @@ public class CachedWorld {
         if (c == null || !c.isLoaded()) return;
         c.set(x & 15, y, z & 15, PathingBlockType.AIR);
         c.setBreakTicks(x & 15, y, z & 15, (byte) 0);
+        c.clearNoGround(x & 15, y, z & 15);
     }
 
     public boolean isLoaded(int x, int z) {

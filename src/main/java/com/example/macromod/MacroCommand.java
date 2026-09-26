@@ -60,7 +60,7 @@ public class MacroCommand {
 
                 .then(ClientCommands.literal("set")
                     .executes(ctx -> {
-                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set <smoothlook> <true|false>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set <smoothlook|botview> <true|false>"));
                         return 0;
                     })
                     .then(ClientCommands.literal("smoothlook")
@@ -68,6 +68,12 @@ public class MacroCommand {
                             .executes(ctx -> setSmoothLook(ctx.getSource(), true)))
                         .then(ClientCommands.literal("false")
                             .executes(ctx -> setSmoothLook(ctx.getSource(), false)))
+                    )
+                    .then(ClientCommands.literal("botview")
+                        .then(ClientCommands.literal("true")
+                            .executes(ctx -> setBotView(ctx.getSource(), true)))
+                        .then(ClientCommands.literal("false")
+                            .executes(ctx -> setBotView(ctx.getSource(), false)))
                     )
                 )
 
@@ -282,6 +288,12 @@ public class MacroCommand {
         return 1;
     }
 
+    private static int setBotView(FabricClientCommandSource source, boolean enabled) {
+        com.example.macromod.path.render.RotationController.setBotViewEnabled(enabled);
+        source.sendFeedback(Component.literal("§aServer view body: §f" + (enabled ? "on" : "off")));
+        return 1;
+    }
+
     private static int pathTo(FabricClientCommandSource source, double x, double y, double z) {
         PathingBehavior.get().setGoal(new GoalBlock(x, y, z));
         source.sendFeedback(Component.literal(
@@ -355,18 +367,27 @@ public class MacroCommand {
     private static SuggestionProvider<FabricClientCommandSource> mobNameSuggestions() {
         return (ctx, builder) -> {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            java.util.Set<String> seen = new java.util.HashSet<>();
+
             for (String literal : List.of("hostile", "passive", "mobs")) {
-                if (literal.startsWith(remaining)) builder.suggest(literal);
+                if (literal.startsWith(remaining)) {
+                    builder.suggest(literal);
+                    seen.add(literal);
+                }
             }
+
             Minecraft client = Minecraft.getInstance();
             if (client.level != null && client.player != null) {
-                java.util.Set<String> seen = new java.util.HashSet<>();
                 for (var e : client.level.entitiesForRendering()) {
                     if (!(e instanceof net.minecraft.world.entity.LivingEntity)) continue;
                     if (e.getId() == client.player.getId()) continue;
                     String name = com.example.macromod.TargetRegistry.shortName(e.getType());
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
+            }
+
+            for (String name : com.example.macromod.TargetRegistry.mobNames()) {
+                if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
             }
             return builder.buildFuture();
         };
@@ -375,9 +396,9 @@ public class MacroCommand {
     private static SuggestionProvider<FabricClientCommandSource> followTargetSuggestions() {
         return (ctx, builder) -> {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
+            java.util.Set<String> seen = new java.util.HashSet<>();
             Minecraft client = Minecraft.getInstance();
             if (client.level != null && client.player != null) {
-                java.util.Set<String> seen = new java.util.HashSet<>();
                 for (var e : client.level.entitiesForRendering()) {
                     if (e.getId() == client.player.getId()) continue;
                     String name = e.hasCustomName()
@@ -385,6 +406,9 @@ public class MacroCommand {
                         : com.example.macromod.TargetRegistry.shortName(e.getType());
                     if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
                 }
+            }
+            for (String name : com.example.macromod.TargetRegistry.mobNames()) {
+                if (seen.add(name) && name.startsWith(remaining)) builder.suggest(name);
             }
             return builder.buildFuture();
         };
@@ -469,6 +493,7 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro follow <name> §7— follow a mob or player"));
         source.sendFeedback(Component.literal("§f/macro combatstop §7— stop attack/follow routines"));
         source.sendFeedback(Component.literal("§f/macro set smoothlook <true|false> §7— smooth all head turning"));
+        source.sendFeedback(Component.literal("§f/macro set botview <true|false> §7— point the body where the server sees it"));
         source.sendFeedback(Component.literal("§f/macro pathdebug walk <x> <y> <z> §7— pathfind to a coord"));
         source.sendFeedback(Component.literal("§f/macro pathdebug pathxz <x> <z> §7— pathfind to XZ"));
         source.sendFeedback(Component.literal("§f/macro pathdebug stop §7— stop pathing"));

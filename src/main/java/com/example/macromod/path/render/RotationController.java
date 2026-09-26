@@ -33,8 +33,20 @@ public final class RotationController {
     private static boolean hasCamera = false;
 
     private static boolean smoothLookEnabled = true;
+    private static boolean botViewEnabled = false;
+    private static float lastViewYaw = 0f;
+    private static boolean hasViewYaw = false;
 
     private RotationController() {}
+
+    public static boolean isBotViewEnabled() {
+        return botViewEnabled;
+    }
+
+    public static void setBotViewEnabled(boolean enabled) {
+        botViewEnabled = enabled;
+        if (!enabled) hasViewYaw = false;
+    }
 
     public static boolean isSmoothLookEnabled() {
         return smoothLookEnabled;
@@ -68,10 +80,33 @@ public final class RotationController {
         if (p == null) return;
 
         captureCamera(p);
-        resolve(p);
+        if (!hasBot) {
+            botYaw = p.getYRot();
+            botPitch = p.getXRot();
+            hasBot = true;
+        }
         save(p);
         p.setYRot(botYaw);
         p.setXRot(botPitch);
+        applyBodyView(p);
+    }
+
+    private static void applyBodyView(LocalPlayer p) {
+        if (!botViewEnabled) return;
+
+        if (hasViewYaw) {
+            p.yBodyRotO = lastViewYaw;
+            p.yHeadRotO = lastViewYaw;
+        } else {
+            p.yBodyRotO = botYaw;
+            p.yHeadRotO = botYaw;
+        }
+
+        p.setYBodyRot(botYaw);
+        p.setYHeadRot(botYaw);
+
+        lastViewYaw = botYaw;
+        hasViewYaw = true;
     }
 
     public static void restoreAfterTick() {
@@ -91,15 +126,7 @@ public final class RotationController {
     public static void applyForMovement(Entity self) {
         LocalPlayer p = localPlayer(self);
         if (p == null || moveSaved) return;
-        if (!hasBot) {
-            botYaw = p.getYRot();
-            botPitch = p.getXRot();
-            hasBot = true;
-        }
-        if (hasTarget && !smoothRequested) {
-            botYaw = targetYaw;
-            botPitch = targetPitch;
-        }
+        resolve(p);
         moveYaw = p.getYRot();
         movePitch = p.getXRot();
         moveSaved = true;
@@ -130,6 +157,7 @@ public final class RotationController {
         smoothing = false;
         saved = false;
         moveSaved = false;
+        hasViewYaw = false;
     }
 
     public static void captureCamera(LocalPlayer p) {
@@ -163,6 +191,12 @@ public final class RotationController {
         }
 
         if (!smoothing) return;
+        if (atTarget()) {
+            botYaw = targetYaw;
+            botPitch = targetPitch;
+            smoothing = false;
+            return;
+        }
 
         botYaw = wrapYaw(botYaw + mouseToAngle(angleToMouse(clampStep(wrapYaw(targetYaw - botYaw), MAX_YAW_STEP))));
         botPitch = clampPitch(botPitch + mouseToAngle(angleToMouse(clampStep(targetPitch - botPitch, MAX_PITCH_STEP))));

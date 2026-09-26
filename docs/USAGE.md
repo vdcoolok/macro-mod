@@ -37,10 +37,10 @@
 
 | Command | Description |
 |---|---|
-| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine, names are fuzzy matched |
+| `/macro attack <hostile\|passive\|mobs\|names>` | Starts the kill routine, names are fuzzy matched, tab completes mob names |
 | `/macro attack set attackmode <spam\|crit>` | Selects the attack style |
 | `/macro attack set spaminterval <ms>` | Sets the hit interval for spam mode |
-| `/macro follow <name>` | Follows a mob or player by name |
+| `/macro follow <name>` | Follows a mob or player by name, tab completes every mob in the game |
 | `/macro combatstop` | Stops attack/follow without stopping the macro |
 | `/macro set smoothlook <true\|false>` | Smooths all automatic turning, on by default, `auto look` stays instant. Your own view is never taken over |
 
@@ -125,6 +125,8 @@ The folder is created on the first `/macro` run. Files can also be edited with a
 | `combatstop` | Stops attack/follow |
 
 > In a macro file, `attack`/`follow` start their routine and the macro continues with the next actions. The routine runs independently each tick. End it later with `combatstop`, or `/macro stop` to stop everything.
+
+The bot always looks at its target and closes to within 4.45 blocks before swinging. Outside that it keeps walking toward the target and swings as soon as it gets back in range. In `crit` mode it jumps to start each attempt and swings partway down the fall, which is what actually registers the crit. If the target backs out of range mid jump, the swing is skipped and it walks in again.
 
 <details>
 <summary><b>Accepted aliases</b></summary>
