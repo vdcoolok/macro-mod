@@ -49,10 +49,13 @@
 | `/macro set smoothlook <true\|false>` | Smooths all automatic turning, on by default, `auto look` stays instant. Your own view is never taken over |
 | `/macro set freecam <off\|orbit\|free>` | Detaches the view from your head. `orbit` follows behind you, `free` flies on WASD |
 | `/macro set fcamdist <blocks>` | Distance the free camera sits behind you, scroll also zooms |
+| `/macro set secondcamera <true\|false>` | Shows the bot aim view as an inset, on by default |
 
-### Free Camera
+### Cameras
 
-Detaches your view from your head, which is what you want when the bot is fighting or pathing and you want to walk around it and watch. Press F6 to cycle `off`, `orbit`, `free`.
+There are two separate things here and they are not the same feature.
+
+**Free camera** detaches your view from your head, which is what you want when the bot is fighting or pathing and you want to walk around it and watch. Press F6 to cycle `off`, `orbit`, `free`.
 
 | Mode | Behavior |
 |---|---|
@@ -62,7 +65,9 @@ Detaches your view from your head, which is what you want when the bot is fighti
 
 In every mode the mouse still looks around and your view is never fought over, because the bot sends its own rotation to the server and restores your view afterwards. `fcamdist` sets the starting distance.
 
-The free camera is forced off while `/macro attack` or `/macro kill` is running, since attacking needs your real view. Starting an attack turns it off for you, and F6 or the command will refuse to turn it back on until `/macro combatstop`. You get a one line notice in chat instead of a silent no-op.
+The free camera is forced off while `/macro attack` or `/macro kill` is running, since attacking needs your real view. Starting an attack turns it off for you, and F6 or the command will refuse to turn it back on until `/macro combatstop`. You get a one line notice in chat instead of a silent no-op. This does not affect the second camera, which is the one you actually want during a fight.
+
+**Second camera** is a genuine second render. The world is drawn a second time from the bot's aim into its own render target and shown as a picture in picture in the top right, so you can see exactly where the bot is pointing while you keep your own view. Turn it off with `/macro set secondcamera false` if you want the frames back.
 
 > Everything is under `/macro`. There is no `/combat` command. Under `/macro attack` you only get `set`, `passive`, `hostile`, `all` and `only`, the mob list is under `only`.
 >

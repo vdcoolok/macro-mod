@@ -146,6 +146,16 @@ public final class RotationController {
         moveSaved = false;
     }
 
+    public static float[] getBotRotation() {
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (!hasBot && p != null) {
+            botYaw = p.getYRot();
+            botPitch = p.getXRot();
+            hasBot = true;
+        }
+        return new float[] { botYaw, botPitch };
+    }
+
     public static boolean isSettling() {
         return smoothing || hasTarget;
     }

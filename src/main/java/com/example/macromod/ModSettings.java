@@ -1,6 +1,7 @@
 package com.example.macromod;
 
 import com.example.macromod.path.render.RotationController;
+import com.example.macromod.path.render.SecondCamera;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ public final class ModSettings {
     private static final String KEY_BOT_VIEW = "botview";
     private static final String KEY_FREE_CAM = "freecam";
     private static final String KEY_FCAM_DIST = "fcamdist";
+    private static final String KEY_SECOND_CAMERA = "secondcamera";
 
     private static final String DEFAULT_ATTACK_MODE = "spam";
     private static final long DEFAULT_SPAM_INTERVAL = 500L;
@@ -24,6 +26,7 @@ public final class ModSettings {
     private static final boolean DEFAULT_BOT_VIEW = false;
     private static final String DEFAULT_FREE_CAM = "off";
     private static final double DEFAULT_FCAM_DIST = 4.0;
+    private static final boolean DEFAULT_SECOND_CAMERA = true;
 
     private static final Properties values = new Properties();
     private static Path file = null;
@@ -49,6 +52,12 @@ public final class ModSettings {
         RotationController.setBotViewEnabled(readBoolean(KEY_BOT_VIEW, DEFAULT_BOT_VIEW));
         FreeCamera.setMode(FreeCamera.Mode.parse(readString(KEY_FREE_CAM, DEFAULT_FREE_CAM)));
         FreeCamera.setDistance(readDouble(KEY_FCAM_DIST, DEFAULT_FCAM_DIST));
+        SecondCamera.setEnabled(readBoolean(KEY_SECOND_CAMERA, DEFAULT_SECOND_CAMERA));
+    }
+
+    public static void setSecondCamera(boolean enabled) {
+        SecondCamera.setEnabled(enabled);
+        put(KEY_SECOND_CAMERA, Boolean.toString(SecondCamera.isEnabled()));
     }
 
     public static void setFreeCamera(FreeCamera.Mode next) {

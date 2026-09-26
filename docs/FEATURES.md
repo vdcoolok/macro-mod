@@ -108,7 +108,7 @@ Each target is its own argument, up to four, so completion keeps working after t
 | `spam` *(default)* | Hits on an interval, configurable via `/macro attack set spaminterval <ms>` |
 | `crit` | Jumps and strikes partway down the fall for the critical |
 
-Both the mode and the interval are remembered between launches, as are `/macro set smoothlook`, `/macro set botview` and `/macro set freecam`. They live in `mods/macros/settings.properties` next to your macro files.
+Both the mode and the interval are remembered between launches, as are `/macro set smoothlook`, `/macro set botview`, `/macro set freecam` and `/macro set secondcamera`. They live in `mods/macros/settings.properties` next to your macro files.
 
 > The bot always faces its target and closes to within 4.45 blocks before swinging, in both modes. Outside that range it keeps walking toward the target and swings as soon as it is back in range. In `crit` mode each attempt is a jump followed by a strike once the player is about halfway down the fall, since striking at the apex happens before any fall distance has accumulated and the critical does not register. If the target backs out of range mid jump the strike is skipped and the bot walks in again.
 
@@ -124,7 +124,11 @@ Both the mode and the interval are remembered between launches, as are `/macro s
 
 ---
 
-## Free Camera
+## Cameras
+
+Two independent features, often confused with each other.
+
+### Free Camera
 
 Detaches the rendering camera from your head by taking over the client camera after the game positions it. This is the one that lets you watch the bot instead of being stuck inside it.
 
@@ -136,7 +140,13 @@ Detaches the rendering camera from your head by taking over the client camera af
 
 F6 cycles the modes. The camera keeps your mouse look, so nothing ever fights you for control. The bot's rotation is applied to your player entity only for the ticks it needs and your real view is put back immediately after, which is what lets the free camera and the bot coexist.
 
-It is gated off during `/macro attack` and `/macro kill`. An attack forces the mode back to `off`, and both the keybind and the command refuse to re-enable it while combat is running, because chasing a target needs your actual view. The gate lifts on `/macro combatstop`.
+It is gated off during `/macro attack` and `/macro kill`. An attack forces the mode back to `off`, and both the keybind and the command refuse to re-enable it while combat is running, because chasing a target needs your actual view. The gate lifts on `/macro combatstop` and does not touch the second camera.
+
+### Second Camera
+
+A real second render of the world, not an overlay. The bot's aim produces a `CameraRenderState` with its own position, rotation, projection and cull frustum, and the level renderer draws the entire world again from that state into a dedicated render target. That target is then blitted into the top right corner of the screen as a picture in picture through the normal GUI pipeline, so it composites with the HUD in the right order.
+
+The main render target is swapped for the small one only for the duration of that second pass, so the real view is untouched. Costs roughly a second full world render, turn it off with `/macro set secondcamera false`.
 
 ---
 

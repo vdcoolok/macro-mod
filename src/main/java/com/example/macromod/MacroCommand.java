@@ -68,6 +68,7 @@ public class MacroCommand {
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set <smoothlook|botview> <true|false>"));
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set freecam <off|orbit|free>"));
                         ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set fcamdist <blocks>"));
+                        ctx.getSource().sendFeedback(Component.literal("§cUsage: /macro set secondcamera <true|false>"));
                         return 0;
                     })
                     .then(ClientCommands.literal("smoothlook")
@@ -95,6 +96,12 @@ public class MacroCommand {
                             .executes(ctx -> setFreeCameraDistance(
                                 ctx.getSource(),
                                 DoubleArgumentType.getDouble(ctx, "blocks")))))
+                    .then(ClientCommands.literal("secondcamera")
+                        .then(ClientCommands.literal("true")
+                            .executes(ctx -> setSecondCamera(ctx.getSource(), true)))
+                        .then(ClientCommands.literal("false")
+                            .executes(ctx -> setSecondCamera(ctx.getSource(), false)))
+                    )
                 )
 
                 .then(ClientCommands.literal("action")
@@ -366,6 +373,12 @@ public class MacroCommand {
         return 1;
     }
 
+    private static int setSecondCamera(FabricClientCommandSource source, boolean enabled) {
+        ModSettings.setSecondCamera(enabled);
+        source.sendFeedback(Component.literal("§aSecond camera view: §f" + (enabled ? "on" : "off")));
+        return 1;
+    }
+
     private static int pathTo(FabricClientCommandSource source, double x, double y, double z) {
         PathingBehavior.get().setGoal(new GoalBlock(x, y, z));
         source.sendFeedback(Component.literal(
@@ -575,6 +588,7 @@ public class MacroCommand {
         source.sendFeedback(Component.literal("§f/macro set botview <true|false> §7— point the body where the server sees it"));
         source.sendFeedback(Component.literal("§f/macro set freecam <off|orbit|free> §7— detach the view, F6 cycles"));
         source.sendFeedback(Component.literal("§f/macro set fcamdist <blocks> §7— free camera distance"));
+        source.sendFeedback(Component.literal("§f/macro set secondcamera <true|false> §7— bot aim view inset"));
         source.sendFeedback(Component.literal("§f/macro pathdebug walk <x> <y> <z> §7— pathfind to a coord"));
         source.sendFeedback(Component.literal("§f/macro pathdebug pathxz <x> <z> §7— pathfind to XZ"));
         source.sendFeedback(Component.literal("§f/macro pathdebug stop §7— stop pathing"));
